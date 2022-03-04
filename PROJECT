@@ -6,4 +6,14 @@ plugins:
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: physics-workflow-operator
 repo: github.com/luis5tb/physics-workflow-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: physics-faas.eu
+  group: cache
+  kind: Workflow
+  path: github.com/luis5tb/physics-workflow-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

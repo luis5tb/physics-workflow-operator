@@ -1,0 +1,6 @@
+apiVersion: cache.physics-faas.eu/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-sample
+spec:
+  # TODO(user): Add fields here
