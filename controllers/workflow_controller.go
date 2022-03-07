@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	cachev1alpha1 "github.com/luis5tb/physics-workflow-operator/api/v1alpha1"
+	wp5v1alpha1 "github.com/luis5tb/physics-workflow-operator/api/v1alpha1"
 )
 
 // WorkflowReconciler reconciles a Workflow object
@@ -33,9 +33,9 @@ type WorkflowReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=cache.physics-faas.eu,resources=workflows,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cache.physics-faas.eu,resources=workflows/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cache.physics-faas.eu,resources=workflows/finalizers,verbs=update
+//+kubebuilder:rbac:groups=wp5.physics-faas.eu,resources=workflows,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=wp5.physics-faas.eu,resources=workflows/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=wp5.physics-faas.eu,resources=workflows/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -57,6 +57,6 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 // SetupWithManager sets up the controller with the Manager.
 func (r *WorkflowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&cachev1alpha1.Workflow{}).
+		For(&wp5v1alpha1.Workflow{}).
 		Complete(r)
 }

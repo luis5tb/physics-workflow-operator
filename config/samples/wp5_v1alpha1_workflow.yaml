@@ -1,4 +1,4 @@
-apiVersion: cache.physics-faas.eu/v1alpha1
+apiVersion: wp5.physics-faas.eu/v1alpha1
 kind: Workflow
 metadata:
   name: workflow-sample
