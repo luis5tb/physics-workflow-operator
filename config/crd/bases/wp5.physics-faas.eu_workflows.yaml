@@ -1,0 +1,174 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: workflows.wp5.physics-faas.eu
+spec:
+  group: wp5.physics-faas.eu
+  names:
+    kind: Workflow
+    listKind: WorkflowList
+    plural: workflows
+    singular: workflow
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Workflow is the Schema for the workflows API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: WorkflowSpec defines the desired state of Workflow
+            properties:
+              actions:
+                items:
+                  properties:
+                    code:
+                      description: 'Code: function code is passed as string here'
+                      type: string
+                    codeRepo:
+                      description: 'CodeRepo: function code is obtained from a repo'
+                      type: string
+                    description:
+                      type: string
+                    extraResources:
+                      description: 'ExtraResources: Other resources needed by physics,
+                        such as cpu or memory'
+                      properties:
+                        diskType:
+                          type: string
+                        gpu:
+                          type: boolean
+                      type: object
+                    functionInput:
+                      items:
+                        properties:
+                          default:
+                            type: string
+                          description:
+                            type: string
+                          type:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - default
+                        - type
+                        - value
+                        type: object
+                      type: array
+                    id:
+                      type: string
+                    image:
+                      description: 'Image: function code in a docker image'
+                      type: string
+                    name:
+                      type: string
+                    resources:
+                      description: 'Same resources as the core k8s for containers:
+                        https://github.com/kubernetes/api/blob/master/core/v1/types.go
+                        This includes limits and requests'
+                      properties:
+                        limits:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          description: 'Limits describes the maximum amount of compute
+                            resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                          type: object
+                        requests:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          description: 'Requests describes the minimum amount of compute
+                            resources required. If Requests is omitted for a container,
+                            it defaults to Limits if that is explicitly specified,
+                            otherwise to an implementation-defined value. More info:
+                            https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                          type: object
+                      type: object
+                    runtime:
+                      description: 'Runtime is the function runtime: NodeJS, Python,
+                        ...'
+                      type: string
+                    semantics:
+                      description: 'Semantics: Information provided by the semantic
+                        module'
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                        network:
+                          type: string
+                      type: object
+                    version:
+                      type: string
+                  required:
+                  - name
+                  - runtime
+                  type: object
+                type: array
+              execution:
+                description: 'Exection is the type of execution mode: NativeSequence,
+                  NoderedSequence, or Service'
+                type: string
+              listOfActions:
+                description: ListOfActions is the ordered list of actions to execute
+                items:
+                  properties:
+                    id:
+                      type: string
+                  required:
+                  - id
+                  type: object
+                type: array
+              native:
+                type: boolean
+              platform:
+                description: Platform is the target platform, it can be OpenWhisk,
+                  Knative, ...
+                type: string
+              type:
+                type: string
+            required:
+            - actions
+            - listOfActions
+            - platform
+            type: object
+          status:
+            description: WorkflowStatus defines the observed state of Workflow
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

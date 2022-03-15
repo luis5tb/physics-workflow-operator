@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	typesv1 "k8s.io/api/core/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -28,8 +29,62 @@ type WorkflowSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Workflow. Edit workflow_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Type string `json:"type,omitempty"`
+	// Platform is the target platform, it can be OpenWhisk, Knative, ...
+	Platform string `json:"platform"`
+	// Exection is the type of execution mode: NativeSequence, NoderedSequence, or Service
+	Execution string `json:"execution,omitempty"`
+	Native bool `json:"native,omitempty"`
+
+	// ListOfActions is the ordered list of actions to execute
+	ListOfActions []ActionId `json:"listOfActions"`
+
+	Actions []Action `json:"actions"`
+}
+
+type ActionId struct {
+	Id string `json:"id"`
+}
+
+type Action struct {
+	Name string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Id string `json:"id,omitempty"`
+	Version string `json:"version,omitempty"`
+	// Runtime is the function runtime: NodeJS, Python, ...
+	Runtime string `json:"runtime"`
+	// CodeRepo: function code is obtained from a repo
+	CodeRepo string `json:"codeRepo,omitempty"`
+	// Code: function code is passed as string here
+	Code string `json:"code,omitempty"`
+	// Image: function code in a docker image
+	Image string `json:"image,omitempty"`
+	FunctionInput []Payload `json:"functionInput,omitempty"`
+	// Same resources as the core k8s for containers: https://github.com/kubernetes/api/blob/master/core/v1/types.go
+	// This includes limits and requests
+	Resources typesv1.ResourceRequirements `json:"resources,omitempty"`
+	// ExtraResources: Other resources needed by physics, such as cpu or memory
+	ExtraResources ExtraResourcesInfo `json:"extraResources,omitempty"`
+	// Semantics: Information provided by the semantic module
+	Semantics SemanticsInfo `json:"semantics,omitempty"`
+}
+
+type Payload struct {
+	Value string `json:"value"`
+	Default string `json:"default"`
+	Type string `json:"type"`
+	Description string `json:"description,omitempty"`
+}
+
+type ExtraResourcesInfo struct {
+    Gpu bool `json:"gpu,omitempty"`
+	DiskType string `json:"diskType,omitempty"`
+}
+
+type SemanticsInfo struct {
+	Cpu string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
+	Network string `json:"network,omitempty"`
 }
 
 // WorkflowStatus defines the observed state of Workflow
