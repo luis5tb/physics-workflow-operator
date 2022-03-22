@@ -127,6 +127,7 @@ spec:
                     version:
                       type: string
                   required:
+                  - id
                   - name
                   - runtime
                   type: object

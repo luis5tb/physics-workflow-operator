@@ -49,7 +49,7 @@ type ActionId struct {
 type Action struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	Id          string `json:"id,omitempty"`
+	Id          string `json:"id"`
 	Version     string `json:"version,omitempty"`
 	// Runtime is the function runtime: NodeJS, Python, ...
 	Runtime string `json:"runtime"`
