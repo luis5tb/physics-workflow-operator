@@ -39,6 +39,11 @@ spec:
               actions:
                 items:
                   properties:
+                    annotations:
+                      additionalProperties:
+                        type: string
+                      description: Annotations per function
+                      type: object
                     code:
                       description: 'Code: function code is passed as string here'
                       type: string
@@ -57,22 +62,21 @@ spec:
                           type: boolean
                       type: object
                     functionInput:
-                      items:
+                      additionalProperties:
                         properties:
                           default:
                             type: string
                           description:
                             type: string
+                          name:
+                            type: string
                           type:
                             type: string
                           value:
                             type: string
-                        required:
-                        - default
-                        - type
-                        - value
                         type: object
-                      type: array
+                      description: Input params per function
+                      type: object
                     id:
                       type: string
                     image:

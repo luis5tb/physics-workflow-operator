@@ -58,8 +58,9 @@ type Action struct {
 	// Code: function code is passed as string here
 	Code string `json:"code,omitempty"`
 	// Image: function code in a docker image
-	Image         string    `json:"image,omitempty"`
-	FunctionInput []Payload `json:"functionInput,omitempty"`
+	Image         string      `json:"image,omitempty"`
+	FunctionInput Inputs      `json:"functionInput,omitempty"`
+	Annotations   Annotations `json:"annotations,omitempty"`
 	// Same resources as the core k8s for containers: https://github.com/kubernetes/api/blob/master/core/v1/types.go
 	// This includes limits and requests
 	Resources typesv1.ResourceRequirements `json:"resources,omitempty"`
@@ -69,12 +70,18 @@ type Action struct {
 	Semantics SemanticsInfo `json:"semantics,omitempty"`
 }
 
-type Payload struct {
-	Value       string `json:"value"`
-	Default     string `json:"default"`
-	Type        string `json:"type"`
+// Input params per function
+type Inputs map[string]Input
+type Input struct {
+	Name        string `json:"name,omitempty"`
+	Value       string `json:"value,omitempty"`
+	Default     string `json:"default,omitempty"`
+	Type        string `json:"type,omitempty"`
 	Description string `json:"description,omitempty"`
 }
+
+// Annotations per function
+type Annotations map[string]string
 
 type ExtraResourcesInfo struct {
 	Gpu      bool   `json:"gpu,omitempty"`

@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+      - name: manager
+        env:
+          - name: PHYSICS_OW_PROXY_ENDPOINT
+            value: "http://physics-ow-proxy.default:8090"
+          - name: PHYSICS_OW_ENDPOINT
+            value: "http://localhost:3233"
+          - name: PHYSICS_OW_PROXY_IPP
+            value: IfNotPresent  
+                   

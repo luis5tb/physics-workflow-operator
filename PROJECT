@@ -5,7 +5,7 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: physics-workflow-operator
-repo: github.com/luis5tb/physics-workflow-operator
+repo: gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator
 resources:
 - api:
     crdVersion: v1
@@ -14,6 +14,6 @@ resources:
   domain: physics-faas.eu
   group: wp5
   kind: Workflow
-  path: github.com/luis5tb/physics-workflow-operator/api/v1alpha1
+  path: gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

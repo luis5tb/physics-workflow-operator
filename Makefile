@@ -37,7 +37,8 @@ BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
 #IMG ?= controller:latest
-IMG ?= luis5tb/physics-workflow-operator:latest
+#IMG ?= luis5tb/physics-workflow-operator:latest
+IMG ?= registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.22
 
@@ -102,9 +103,17 @@ test: manifests generate fmt vet envtest ## Run tests.
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
+
+MYIP = $(shell ./myip.sh)
+PROXY_EP=export PHYSICS_OW_PROXY_ENDPOINT=http://localhost:8090
+#PROXY_EP=export PHYSICS_OW_PROXY_ENDPOINT=http://physics-ow-proxy.default:8090
+OW_EP=export PHYSICS_OW_ENDPOINT=http://$(MYIP):3233
+#OW_EP=export PHYSICS_OW_ENDPOINT=http://localhost:3233
+PROXY_IPP=export PHYSICS_OW_PROXY_IPP=IfNotPresent
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
+
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
@@ -136,6 +145,23 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
+
+KIND_CLUSTER = physics
+MYIP = $(shell ./myip.sh)
+.PHONY: deploykind
+deploykind: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	docker exec -it $(KIND_CLUSTER)-control-plane crictl rmi docker.io/library/$(IMG)
+	kind load docker-image $(IMG) --name $(KIND_CLUSTER)
+	cd config/localdev && sed -i 's/localhost/$(MYIP)/g' ./manager_env_patch.yaml
+	$(KUSTOMIZE) build config/localdev | kubectl apply --context=kind-$(KIND_CLUSTER) -f -
+	cd config/localdev && sed -i 's/$(MYIP)/localhost/g' ./manager_env_patch.yaml
+
+.PHONY: undeploykind
+undeploykind: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	$(KUSTOMIZE) build config/localdev | kubectl delete --context=kind-$(KIND_CLUSTER) --ignore-not-found=$(ignore-not-found) -f -
+
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen

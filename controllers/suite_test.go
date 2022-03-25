@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	wp5v1alpha1 "github.com/luis5tb/physics-workflow-operator/api/v1alpha1"
+	wp5v1alpha1 "gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

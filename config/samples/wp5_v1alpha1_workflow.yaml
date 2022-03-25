@@ -21,10 +21,12 @@ spec:
     runtime: nodejs
     code: "function main(msg) {\nmsg.payload=msg.payload+' hello';\nreturn msg;}"
     functionInput:
-      - default: ""
+      payload:
+        default: ""
         description: "payload parameter"
         type: string
-        value: "hello"
+        value: ""
+        #name: "payload"        
     resources:
       limits:
         memory: 128
@@ -50,12 +52,14 @@ spec:
       return msg;
       }
     functionInput:
-       - default: ""
+      payload:
+         default: ""
          description: "payload parameter"
          type: string
-         value: "world"
+         value: ""
+         name: "payload"
     resources:
       limits:
-        memory: 256
+        mqemory: 256
     extraResources:
       gpu: false
