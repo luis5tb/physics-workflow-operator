@@ -1,0 +1,158 @@
+/**
+ * This pipeline DinD for course
+ */
+
+def label = "dind-${UUID.randomUUID().toString()}"
+
+properties(
+    [
+        parameters(
+            [
+                string(name: 'dockerimagename', defaultValue: 'physics-workflow-operator', ),
+                booleanParam(name: 'deploy_dev', defaultValue: false),
+                string(name: 'projectname', defaultValue: 'physics-workflow-operator')
+            ]
+        )
+   ]
+)
+
+podTemplate(label: label, namespace: 'devops', yaml: """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: dind-agent
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: dind
+    image: docker:20.10.12-dind
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    imagePullPolicy: IfNotPresent
+    tty: true
+    securityContext:
+      privileged: true
+    volumeMounts:
+      - name: docker-graph-storage
+        mountPath: /var/lib/docker
+  volumes:
+    - name: docker-graph-storage
+      emptyDir: {}
+"""
+) {
+
+
+/* Slack notify integration */
+
+def notifySlack = { String buildStatus ->
+    // Build status of null means success.
+    buildStatus = buildStatus ?: 'SUCCESS'
+
+    def color
+
+    if (buildStatus == 'STARTED') {
+        color = '#D4DADF'
+    } else if (buildStatus == 'SUCCESS') {
+        color = '#BDFFC3'
+    } else if (buildStatus == 'UNSTABLE') {
+        color = '#FFFE89'
+    } else {
+        color = '#FF9FA1'
+    }
+
+    def msg = "${buildStatus}: `${env.JOB_NAME}` #${env.BUILD_NUMBER}:\n${env.BUILD_URL}"
+
+    println "slackSend -> ${msg}"
+    //slackSend(color: color, message: msg)
+}
+
+
+node(label) {
+    def project = "wp5"
+    def dockerPhysics = "registry.apps.ocphub.physics-faas.eu"
+    def registryPhysics = "https://registry.apps.ocphub.physics-faas.eu"
+    def version = "latest"
+    checkout scm
+
+
+stage('Testing condition'){  
+    if(env.deploy_dev.toBoolean()){  
+        echo "You have selected to deploy in dev namespace"
+        def tmp_projectname = sh returnStdout: true, script: "echo 'dev' | tr -d '[:space:]'"
+        env.projectname = tmp_projectname
+    } else {
+        echo "You have selected to deploy in your namespace"
+    }
+}   
+
+
+stage('Check condition') {
+	container('dind') {
+         sh """
+         echo ${projectname}
+         """
+    }   
+}
+
+
+try {
+    notifySlack('STARTED')
+
+stage('Build') {
+   container('dind') {
+         sh """
+         make build
+         """
+    }   
+} 
+
+
+stage('Build docker') {
+   container('dind') {
+         sh """
+         make docker-build
+         #docker build -t ${dockerPhysics}/${project}/${dockerimagename} .
+         """
+    }   
+} 
+
+
+stage('Push Docker image') {
+    container('dind') {
+        withCredentials([[$class: 'UsernamePasswordMultiBinding',
+          credentialsId: 'jenkins',
+          usernameVariable: 'JENKINS_USER',
+          passwordVariable: 'JENKINS_PASSWORD']]) {
+          sh """
+            docker image ls
+            docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
+            version = $(docker images ${dockerimagename} --format "{{.Tag}}")
+            docker push ${dockerPhysics}/${project}/${dockerimagename}:${version}
+            """
+        }
+    }
+}
+
+}catch (e) {
+    println "Failed to deploy - ${currentBuild.fullDisplayName}"
+    notifySlack('UNSTABLE')
+}
+finally {
+    // Success or failure, always send notifications
+    notifySlack(currentBuild.result)
+}      
+
+
+stage ('Start deploy pipeline') {
+    build job: 'orchestrator-DEPLOY', parameters: [string(name: 'projectname',  value: "${projectname}")]
+}
+
+
+}   // node()
+}   // podTemplate()

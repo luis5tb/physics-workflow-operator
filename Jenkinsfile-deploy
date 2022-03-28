@@ -1,0 +1,100 @@
+def label = "dind-${UUID.randomUUID().toString()}"
+
+properties(
+  [
+  parameters(
+     [
+     string(defaultValue: 'physics-workflow-operator', name: 'dockerimagename'),
+     booleanParam(name: 'deploy_dev', defaultValue: ''),
+     string(name: 'projectname', defaultValue: '')
+     ]
+    )
+   ]
+  )
+  
+podTemplate(label: label, namespace: 'dev', yaml: """
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    sidecar.istio.io/inject: "false"
+spec:
+  containers:
+  - name: oc-client
+    image: appuio/oc
+    resources: 
+      requests: 
+        cpu: 1 
+        memory: 2G 
+    command:
+    - cat
+    tty: true
+"""
+) {
+
+/* Slack notify integration */
+
+def notifySlack = { String buildStatus ->
+    // Build status of null means success.
+    buildStatus = buildStatus ?: 'SUCCESS'
+
+    def color
+
+    if (buildStatus == 'STARTED') {
+        color = '#D4DADF'
+    } else if (buildStatus == 'SUCCESS') {
+        color = '#BDFFC3'
+    } else if (buildStatus == 'UNSTABLE') {
+        color = '#FFFE89'
+    } else {
+        color = '#FF9FA1'
+    }
+
+    def msg = "${buildStatus}: `${env.JOB_NAME}` #${env.BUILD_NUMBER}:\n${env.BUILD_URL}"
+
+    println "slackSend - ${msg}"
+    //slackSend(color: color, message: msg)
+}
+
+node(label) {
+  def project = "wp5"
+  def dockerPhysics = "registry.apps.ocphub.physics-faas.eu"
+  def registryPhysics = "https://registry.apps.ocphub.physics-faas.eu"
+  def version = "latest"
+  checkout scm
+     try {
+        notifySlack('STARTED')
+
+ stage('Deploy Orchestrator') {
+    container('oc-client') {      
+     configFileProvider(
+        [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
+            def T = sh returnStdout: true, script: 'date +%B-%d-%y-%H-%M-%S'
+            def TIME = sh returnStdout: true, script: "echo '$T' | tr -d '[:space:]'"
+            sh """
+                export KUBECONFIG=$CONFIG
+                echo ${projectname}
+                echo "-------------"
+                #cat testisprint-deploy.yaml| sed "s/{{time}}/$TIME/g"|oc -n ${projectname} apply -f -
+                #oc -n ${projectname} apply -f testisprint-svc.yaml 
+                #oc -n ${projectname} apply -f testisprint-router.yaml
+                #kubectl get all -o wide
+                #make install deploy
+                version = $(docker images ${dockerimagename} --format "{{.Tag}}")
+                cd config/manager && $(KUSTOMIZE) edit set image controller=${dockerPhysics}/${project}/${dockerimagename}:${version}
+	            $(KUSTOMIZE) build config/default | kubectl apply -f -
+                #kubectl get all -o wide
+            """
+      }
+     }
+    }
+}catch (e) {
+        println "Failed to deploy - ${currentBuild.fullDisplayName}"
+        notifySlack('UNSTABLE')
+           }
+ finally {
+            // Success or failure, always send notifications
+            notifySlack(currentBuild.result)
+         }
+ }
+}

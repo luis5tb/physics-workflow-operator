@@ -60,6 +60,6 @@ spec:
          name: "payload"
     resources:
       limits:
-        mqemory: 256
+        memory: 256
     extraResources:
       gpu: false

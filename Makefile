@@ -29,7 +29,8 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # physics-faas.eu/physics-workflow-operator-bundle:$VERSION and physics-faas.eu/physics-workflow-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= physics-faas.eu/physics-workflow-operator
+#IMAGE_TAG_BASE ?= physics-faas.eu/physics-workflow-operator
+IMAGE_TAG_BASE ?= registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -38,7 +39,8 @@ BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 # Image URL to use all building/pushing image targets
 #IMG ?= controller:latest
 #IMG ?= luis5tb/physics-workflow-operator:latest
-IMG ?= registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator:latest
+#IMG ?= registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator:v$(VERSION)
+IMG ?= physics-workflow-operator:v$(VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.22
 
@@ -152,7 +154,8 @@ MYIP = $(shell ./myip.sh)
 .PHONY: deploykind
 deploykind: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	docker exec -it $(KIND_CLUSTER)-control-plane crictl rmi docker.io/library/$(IMG)
+	#docker exec -it $(KIND_CLUSTER)-control-plane crictl rmi docker.io/library/$(IMG)
+	#docker exec -it $(KIND_CLUSTER)-control-plane crictl rmi $(IMG)
 	kind load docker-image $(IMG) --name $(KIND_CLUSTER)
 	cd config/localdev && sed -i 's/localhost/$(MYIP)/g' ./manager_env_patch.yaml
 	$(KUSTOMIZE) build config/localdev | kubectl apply --context=kind-$(KIND_CLUSTER) -f -

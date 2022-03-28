@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator
-  newTag: latest
+  #newTag: v0.0.1

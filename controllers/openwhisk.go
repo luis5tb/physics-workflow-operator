@@ -162,28 +162,26 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action wp5v1alpha1.Actio
 			params.Inputs = append(params.Inputs, input)
 		}
 	}
-	/*
-		if len(action.Annotations) > 0 {
-			params.Annotations = make([]struct {
+	if len(action.Annotations) > 0 {
+		params.Annotations = make([]struct {
+			Key   string `json:"key,omitempty"`
+			Value string `json:"value,omitempty"`
+		}, 0)
+		for key, value := range action.Annotations {
+			annotation := struct {
 				Key   string `json:"key,omitempty"`
 				Value string `json:"value,omitempty"`
-			}, 0)
-			for key, value := range action.Annotations {
-				annotation := struct {
-					Key   string `json:"key,omitempty"`
-					Value string `json:"value,omitempty"`
-				}{key, value}
-				params.Annotations = append(params.Annotations, annotation)
-			}
+			}{key, value}
+			params.Annotations = append(params.Annotations, annotation)
 		}
-	*/
+	}
 	//if len(action.Limits) > 0 {
 	if len(action.Resources.Limits) > 0 {
 		params.Limits = make(map[string]int)
 		if _, ok := action.Resources.Limits["memory"]; ok { // OW memory limit in MB <-> K8S memory limit in bytes (string)
 			valors := action.Resources.Limits["memory"]
 			if valors.Value() > 0 {
-				params.Limits["memory"] = int(valors.Value() / 1024 / 1024)
+				params.Limits["memory"] = int(valors.Value()) // / 1024 / 1024)
 			}
 		}
 		if _, ok := action.Resources.Limits["cpu"]; ok { // OW cpu limit in cores? <-> K8S cpu limit in cores (string)
@@ -195,7 +193,7 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action wp5v1alpha1.Actio
 		if _, ok := action.Resources.Limits["storage"]; ok { // OW logs limit in MB <-> K8S Volume limit in bytes (string)
 			valors := action.Resources.Limits["storage"]
 			if valors.Value() > 0 {
-				params.Limits["logs"] = int(valors.Value() / 1024 / 1024)
+				params.Limits["logs"] = int(valors.Value()) //  / 1024 / 1024)
 			}
 		}
 		/*
@@ -341,10 +339,7 @@ func CleanUpExternalResources(logger logr.Logger, namespace string, workflowMani
 	fm := &FaaSManager{
 		Name: "openwhisk",
 	}
-	pkgInfo := struct{ Name string }{}
-	if workflowManifest.Spec.Execution == "NativeSequence" {
-		pkgInfo.Name = workflowManifest.Name
-	}
+	pkgInfo := struct{ Name string }{workflowManifest.Name}
 	//for pkgName, pkgInfo := range workflowManifest.Spec.Packages {
 	//	pkgInfo.Name = pkgName
 	//for actionName, action := range pkgInfo.Actions {
@@ -361,34 +356,25 @@ func CleanUpExternalResources(logger logr.Logger, namespace string, workflowMani
 			}
 		}
 	}
-	var actionList string
-	for _, actionId := range workflowManifest.Spec.ListOfActions {
-		for _, action := range workflowManifest.Spec.Actions {
-			if action.Id == actionId.Id {
-				actionId.Id = action.Name
-				break
+	if workflowManifest.Spec.Execution == "NativeSequence" {
+		sequence := struct {
+			Name        string
+			Annotations wp5v1alpha1.Annotations
+			Actions     string
+		}{workflowManifest.Name, nil, ""}
+		//for sequenceName, sequence := range pkgInfo.Sequences {
+		//sequence.Name = sequenceName
+		logger.Info("Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
+		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
+		logger.Info("Read Sequence: ", "statusCode", statusCode, "status", status)
+		if statusCode == 200 {
+			statusCode, status = fm.DeleteFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
+			logger.Info("Delete Sequence: ", "statusCode", statusCode, "status", status)
+			if statusCode != 200 {
+				return goerrors.New("Delete Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
 			}
 		}
-		actionList += actionId.Id + ","
-	}
-	actionList = strings.TrimSuffix(actionList, ",")
-	sequence := struct {
-		Name        string
-		Annotations wp5v1alpha1.Annotations
-		Actions     string
-	}{workflowManifest.Name, nil, actionList}
-	//for sequenceName, sequence := range pkgInfo.Sequences {
-	//sequence.Name = sequenceName
-	logger.Info("Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
-	statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-	logger.Info("Read Sequence: ", "statusCode", statusCode, "status", status)
-	if statusCode == 200 {
-		statusCode, status = fm.DeleteFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-		logger.Info("Delete Sequence: ", "statusCode", statusCode, "status", status)
-		if statusCode != 200 {
-			return goerrors.New("Delete Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
-		}
-	}
+	} // if workflowManifest.Spec.Execution == "NativeSequence"
 	//}		// for pkgInfo.Sequences
 	//}		// for workflowManifest.Spec.Packages
 	logger.Info("cleanUp() end.")
@@ -401,15 +387,16 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 	fm := &FaaSManager{
 		Name: "openwhisk",
 	}
-	pkgInfo := struct{ Name string }{}
-	if workflowManifest.Spec.Execution == "NativeSequence" {
-		pkgInfo.Name = workflowManifest.Name
-	}
+	pkgInfo := struct{ Name string }{workflowManifest.Name}
 	//for pkgName, pkgInfo := range workflowManifest.Spec.Packages {
 	//	pkgInfo.Name = pkgName
 	//	for actionName, action := range pkgInfo.Actions {
 	for _, action := range workflowManifest.Spec.Actions {
 		//action.Name = actionName
+		if len(action.Annotations) == 0 {
+			action.Annotations = make(wp5v1alpha1.Annotations)
+		}
+		action.Annotations["id"] = action.Id
 		logger.Info("Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, action.Name)
 		logger.Info("Read Function: ", "statusCode", statusCode, "status", status)
@@ -429,54 +416,57 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 			}
 		}
 	}
-	var actionList string
-	for _, actionId := range workflowManifest.Spec.ListOfActions {
-		for _, action := range workflowManifest.Spec.Actions {
-			if action.Id == actionId.Id {
-				actionId.Id = action.Name
-				break
+	if workflowManifest.Spec.Execution == "NativeSequence" {
+		var actionList string
+		for _, actionId := range workflowManifest.Spec.ListOfActions {
+			for _, action := range workflowManifest.Spec.Actions {
+				if action.Id == actionId.Id {
+					actionId.Id = action.Name
+					break
+				}
 			}
+			actionList += actionId.Id + ","
 		}
-		actionList += actionId.Id + ","
-	}
-	actionList = strings.TrimSuffix(actionList, ",")
-	sequence := struct {
-		Name        string
-		Annotations wp5v1alpha1.Annotations
-		Actions     string
-	}{workflowManifest.Name, nil, actionList}
-	//for sequenceName, sequence := range pkgInfo.Sequences {
-	//sequence.Name = sequenceName
-	logger.Info("Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
-	statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-	logger.Info("Read Sequence: ", "statusCode", statusCode, "status", status)
-	if statusCode == 404 { // Not found => New
-		var sequenceAction wp5v1alpha1.Action
-		sequenceAction.Name = sequence.Name
-		sequenceAction.Runtime = "sequence"
-		sequenceAction.Annotations = sequence.Annotations
-		//sequenceAction.Code = sequence.Actions
-		sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
-		statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, sequenceAction)
-		logger.Info("Create Sequence: ", "statusCode", statusCode, "status", status)
-		if statusCode != 200 {
-			return goerrors.New("Create Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
-		}
-	} else {
-		if statusCode == 200 { // Found => Update
+		actionList = strings.TrimSuffix(actionList, ",")
+		sequence := struct {
+			Name        string
+			Annotations wp5v1alpha1.Annotations
+			Actions     string
+		}{workflowManifest.Name, make(wp5v1alpha1.Annotations), actionList}
+		sequence.Annotations["id"] = workflowManifest.Annotations["id"]
+		//for sequenceName, sequence := range pkgInfo.Sequences {
+		//sequence.Name = sequenceName
+		logger.Info("Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
+		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
+		logger.Info("Read Sequence: ", "statusCode", statusCode, "status", status)
+		if statusCode == 404 { // Not found => New
 			var sequenceAction wp5v1alpha1.Action
 			sequenceAction.Name = sequence.Name
 			sequenceAction.Runtime = "sequence"
 			sequenceAction.Annotations = sequence.Annotations
 			//sequenceAction.Code = sequence.Actions
 			sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
-			statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, sequenceAction, false)
-			logger.Info("Update Sequence: ", "statusCode", statusCode, "status", status)
+			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, sequenceAction)
+			logger.Info("Create Sequence: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
-				return goerrors.New("Update Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
+				return goerrors.New("Create Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
+			}
+		} else {
+			if statusCode == 200 { // Found => Update
+				var sequenceAction wp5v1alpha1.Action
+				sequenceAction.Name = sequence.Name
+				sequenceAction.Runtime = "sequence"
+				sequenceAction.Annotations = sequence.Annotations
+				//sequenceAction.Code = sequence.Actions
+				sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
+				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, sequenceAction, false)
+				logger.Info("Update Sequence: ", "statusCode", statusCode, "status", status)
+				if statusCode != 200 {
+					return goerrors.New("Update Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
+				}
 			}
 		}
-	}
+	} // if workflowManifest.Spec.Execution == "NativeSequence"
 	//}		// for pkgInfo.Sequences
 	//}		// for workflowManifest.Spec.Packages
 	logger.Info("updateAll() end.")
