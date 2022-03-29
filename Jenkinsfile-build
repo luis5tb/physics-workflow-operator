@@ -107,6 +107,7 @@ try {
 stage('Build') {
    container('dind') {
          sh """
+         sleep 10000000
          make build
          """
     }   
