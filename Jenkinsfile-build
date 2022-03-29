@@ -107,6 +107,7 @@ try {
 stage('Build') {
    container('dind') {
          sh """
+         sleep 100000
          apk update
          apk add make
          make build
