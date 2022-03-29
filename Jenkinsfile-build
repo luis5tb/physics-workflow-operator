@@ -107,7 +107,8 @@ try {
 stage('Build') {
    container('dind') {
          sh """
-         sleep 10000000
+         apk update
+         apk add make
          make build
          """
     }   
@@ -130,10 +131,12 @@ stage('Push Docker image') {
           credentialsId: 'jenkins',
           usernameVariable: 'JENKINS_USER',
           passwordVariable: 'JENKINS_PASSWORD']]) {
+          def VERSION = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}"
           sh """
             docker image ls
             docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
-            docker push ${dockerPhysics}/${project}/${dockerimagename}
+            echo $VERSION
+            docker push ${dockerPhysics}/${project}/${dockerimagename}:${VERSION}
             """
         }
     }
