@@ -133,7 +133,7 @@ stage('Push Docker image') {
             docker image ls
             docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
             version = $(docker images ${dockerimagename} --format "{{.Tag}}")
-            docker push ${dockerPhysics}/${project}/${dockerimagename}:${version}
+            docker push ${dockerPhysics}/${project}/${dockerimagename}
             """
         }
     }
