@@ -10,8 +10,7 @@ properties(
             [
                 string(name: 'dockerimagename', defaultValue: 'physics-workflow-operator', ),
                 booleanParam(name: 'deploy_dev', defaultValue: false),
-                string(name: 'projectname', defaultValue: 'physics-workflow-operator'),
-                string(name: 'version', defaultValue: 'latest')
+                string(name: 'projectname', defaultValue: 'physics-workflow-operator')
             ]
         )
    ]
@@ -134,12 +133,13 @@ stage('Push Docker image') {
           credentialsId: 'jenkins',
           usernameVariable: 'JENKINS_USER',
           passwordVariable: 'JENKINS_PASSWORD']]) {
+          def DOMTMP = sh returnStdout: true, script: "docker login -u '${JENKINS_USER}' -p '${JENKINS_PASSWORD}' '${registryPhysics}'; docker images '${dockerimagename}' --format {{.Tag}}"
+          def DOMTMP2 = sh returnStdout: true, script: "echo '$DOMTMP2'|tr ' ' '\n' | tail -1"
           sh """
             docker image ls
             docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
-            env.version=`docker images ${dockerimagename} --format {{.Tag}}`
-            echo ${version}
-            docker push ${dockerPhysics}/${project}/${dockerimagename}:${version}
+            echo "$DOMTMP2"
+            docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOMTMP2}
           """
         }
     }
