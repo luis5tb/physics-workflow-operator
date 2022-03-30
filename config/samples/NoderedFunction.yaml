@@ -1,0 +1,44 @@
+apiVersion: wp5.physics-faas.eu/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-noderedfunction
+  annotations:
+    id: "7c6a3de135b840c5"
+    version: "1"
+spec:
+  execution: NoderedFunction
+  listOfActions: []
+  native: true
+  platform: openWhisk
+  type: flow
+  actions:
+  - name: hello-world
+    description: "hello world"
+    id: 247a1728e0231123
+    version: 1.0.0
+    runtime: blackbox
+    code: "function main(msg){\n\nconsole.log(msg);\nmsg.payload={'response':'hello '+msg.payload.value.name};\nreturn msg;}"
+    image: "gkousiou/noderedhelloaction"
+    annotations: 
+      optimizationGoal: Performance
+      importance: "High"
+    functionInput:
+      payload:
+        default: ""
+        description: "payload parameter"
+        type: string
+        value: ""
+        #name: "payload"        
+    resources:
+      limits:
+        memory: 128
+      requests:
+        cpu: 1
+        memory: 128
+    extraResources:
+      gpu: true
+      diskType: ssd
+    semantics:
+      cpu: medium
+      memory: low
+      network: spikes

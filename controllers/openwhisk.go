@@ -146,7 +146,7 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action wp5v1alpha1.Actio
 		Sequence []string `json:"sequence,omitempty"`
 	}{
 		action.Name, namespace, action.Version, action.Runtime, action.Code,
-		"", action.Image, false, false,
+		"", action.Image, false, true,
 		nil, nil, nil, nil,
 	}
 	if len(action.FunctionInput) > 0 {
