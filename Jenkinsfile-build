@@ -137,6 +137,7 @@ stage('Push Docker image') {
             docker image ls
             docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
             echo "$DOCKERIMAGETAG"
+            docker tag  ${dockerimagename}:${DOCKERIMAGETAG} ${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}
             docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}
           """
         }
