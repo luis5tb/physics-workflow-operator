@@ -77,7 +77,6 @@ node(label) {
     def project = "wp5"
     def dockerPhysics = "registry.apps.ocphub.physics-faas.eu"
     def registryPhysics = "https://registry.apps.ocphub.physics-faas.eu"
-    def version = "latest"
     checkout scm
 
 
@@ -133,12 +132,12 @@ stage('Push Docker image') {
           credentialsId: 'jenkins',
           usernameVariable: 'JENKINS_USER',
           passwordVariable: 'JENKINS_PASSWORD']]) {
-          def DOMTMP = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}"
+          def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}"
           sh """
             docker image ls
             docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
-            echo "$DOMTMP"
-            docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOMTMP}
+            echo "$DOCKERIMAGETAG"
+            docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}
           """
         }
     }
