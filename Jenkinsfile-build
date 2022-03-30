@@ -132,12 +132,12 @@ stage('Push Docker image') {
           credentialsId: 'jenkins',
           usernameVariable: 'JENKINS_USER',
           passwordVariable: 'JENKINS_PASSWORD']]) {
-          def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}"
+          def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}| tr -d '[:space:]'"
           sh """
             docker image ls
             docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
             echo "Version retrieved is: $DOCKERIMAGETAG"
-            docker tag  ${dockerimagename} ${dockerPhysics}/${project}/${dockerimagename}
+            docker tag  '${dockerimagename}:${DOCKERIMAGETAG}' '${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}'
             docker image ls
             docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}
           """
