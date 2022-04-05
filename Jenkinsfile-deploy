@@ -73,11 +73,6 @@ node(label) {
             def T = sh returnStdout: true, script: 'date +%B-%d-%y-%H-%M-%S'
             def TIME = sh returnStdout: true, script: "echo '$T' | tr -d '[:space:]'"
             sh """
-            export KUBECONFIG=$CONFIG
-            echo "-------------"
-            version = $(docker images ${dockerimagename} --format "{{.Tag}}")
-            cd config/manager && $(KUSTOMIZE) edit set image controller=${dockerPhysics}/${project}/${dockerimagename}:${version}
-	        $(KUSTOMIZE) build config/default | kubectl apply -f -
             """
       }
      }
