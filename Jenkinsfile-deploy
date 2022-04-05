@@ -79,9 +79,7 @@ node(label) {
             echo "${projectname}"
             echo "${version}"
             cd config/manager && kustomize edit set image "$controller"
-            pwd
             cd ../..
-            pwd
             kustomize build config/default | kubectl apply -f -
           """
       }
