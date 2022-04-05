@@ -6,7 +6,9 @@ properties(
      [
      string(defaultValue: 'physics-workflow-operator', name: 'dockerimagename'),
      booleanParam(name: 'deploy_dev', defaultValue: ''),
-     string(name: 'projectname', defaultValue: '')
+     string(name: 'projectname', defaultValue: ''),
+     string(name: 'version', defaultValue: ''),
+
      ]
     )
    ]
@@ -60,7 +62,6 @@ node(label) {
   def project = "wp5"
   def dockerPhysics = "registry.apps.ocphub.physics-faas.eu"
   def registryPhysics = "https://registry.apps.ocphub.physics-faas.eu"
-  def version = "latest"
   checkout scm
      try {
         notifySlack('STARTED')
@@ -75,15 +76,9 @@ node(label) {
                 export KUBECONFIG=$CONFIG
                 echo ${projectname}
                 echo "-------------"
-                #cat testisprint-deploy.yaml| sed "s/{{time}}/$TIME/g"|oc -n ${projectname} apply -f -
-                #oc -n ${projectname} apply -f testisprint-svc.yaml 
-                #oc -n ${projectname} apply -f testisprint-router.yaml
-                #kubectl get all -o wide
-                #make install deploy
                 version = $(docker images ${dockerimagename} --format "{{.Tag}}")
                 cd config/manager && $(KUSTOMIZE) edit set image controller=${dockerPhysics}/${project}/${dockerimagename}:${version}
 	            $(KUSTOMIZE) build config/default | kubectl apply -f -
-                #kubectl get all -o wide
             """
       }
      }
