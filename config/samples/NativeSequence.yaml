@@ -2,7 +2,8 @@ apiVersion: wp5.physics-faas.eu/v1alpha1
 kind: Workflow
 metadata:
   name: hello-sequence
-  namespace: default
+  #namespace: default
+  namespace: physics-atos
   annotations:
     id: "19fe4293742e0b2c"
     version: "1"
