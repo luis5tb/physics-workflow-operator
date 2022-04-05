@@ -156,7 +156,7 @@ finally {
 
 
 stage ('Start deploy pipeline') {
-    build job: 'orchestrator-DEPLOY', parameters: [string(name: 'projectname',  value: "${projectname}")]
+    build job: 'physics-workflow-operator-DEPLOY', parameters: [string(name: 'projectname',  value: "${projectname}")]
 }
 
 
