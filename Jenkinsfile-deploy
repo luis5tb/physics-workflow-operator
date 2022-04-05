@@ -70,7 +70,10 @@ node(label) {
     container('oc-client') {      
      configFileProvider(
         [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
-            def DOMTPM = sh returnStdout: true, script: "'${dockerPhysics}/${project}/${dockerimagename}:${version}'| tr -d '[:space:]'"
+       sh """
+            echo "${projectname}"
+            echo "${version}"
+          """
       }
      }
     }
