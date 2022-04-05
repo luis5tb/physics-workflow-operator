@@ -70,7 +70,7 @@ node(label) {
     container('oc-client') {      
      configFileProvider(
         [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
-       def CTRL = sh returnStdout: true, script: '${dockerPhysics}/${project}/${dockerimagename}:${version}'
+       def CTRL = sh returnStdout: true, script: "echo '${dockerPhysics}/${project}/${dockerimagename}:${version}'|tr -d '[:space:]'"
        sh """
             export KUBECONFIG=$CONFIG
             echo "${projectname}"
