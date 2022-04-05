@@ -76,7 +76,6 @@ node(label) {
             export KUBECONFIG=$CONFIG
             echo "-------------"
             echo ${projectname}
-            echo ${version}
             echo ${controller}
             cd config/manager && ${KUSTOMIZE} edit set image 
             ${KUSTOMIZE} build config/default | kubectl apply -f -
