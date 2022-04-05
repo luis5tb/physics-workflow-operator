@@ -10,9 +10,7 @@ spec:
       - name: manager
         env:
           - name: PHYSICS_OW_PROXY_ENDPOINT
-            value: "http://physics-ow-proxy.default"
+            value: "http://physics-ow-proxy.physics-atos"
           - name: PHYSICS_OW_ENDPOINT
-            value: "http://localhost:30198"
-          - name: PHYSICS_OW_PROXY_IPP
-            value: IfNotPresent  
+            value: "http://owdev-nginx.openwhisk"
                    
