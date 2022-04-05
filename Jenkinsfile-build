@@ -133,6 +133,7 @@ stage('Push Docker image') {
           usernameVariable: 'JENKINS_USER',
           passwordVariable: 'JENKINS_PASSWORD']]) {
           def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}| tr -d '[:space:]'"
+          env.imgversion = DOCKERIMAGETAG
           sh """
             docker image ls
             docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
@@ -156,7 +157,7 @@ finally {
 
 
 stage ('Start deploy pipeline') {
-    build job: 'physics-workflow-operator-DEPLOY', parameters: [string(name: 'projectname',  value: "${projectname}")]
+    build job: 'physics-workflow-operator-DEPLOY', parameters: [string(name: 'projectname',  value: "${projectname}"), string(name: 'version',  value: "${imgversion}")]
 }
 
 
