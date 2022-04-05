@@ -71,6 +71,7 @@ node(label) {
      configFileProvider(
         [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
        sh """
+            export KUBECONFIG=$CONFIG
             echo "${projectname}"
             echo "${version}"
           """
