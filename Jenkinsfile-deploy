@@ -71,14 +71,7 @@ node(label) {
      configFileProvider(
         [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
             def CTRL = sh returnStdout: true, script: "'${dockerPhysics}/${project}/${dockerimagename}:${version}'| tr -d '[:space:]'"
-            env.controller = CTRL
             sh """
-            export KUBECONFIG=$CONFIG
-            echo "-------------"
-            echo "${projectname}"
-            echo "${controller}"
-            cd config/manager && ${KUSTOMIZE} edit set image 
-            ${KUSTOMIZE} build config/default | kubectl apply -f -
             """
       }
      }
