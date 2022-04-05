@@ -74,7 +74,6 @@ node(label) {
             def TIME = sh returnStdout: true, script: "echo '$T' | tr -d '[:space:]'"
             sh """
             export KUBECONFIG=$CONFIG
-            echo ${projectname}
             echo "-------------"
             version = $(docker images ${dockerimagename} --format "{{.Tag}}")
             cd config/manager && $(KUSTOMIZE) edit set image controller=${dockerPhysics}/${project}/${dockerimagename}:${version}
