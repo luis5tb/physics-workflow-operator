@@ -80,7 +80,8 @@ node(label) {
             echo "${version}"
             #apk update && apk add make
             #yum update -y
-            yum install -y make golang
+            yum install -y make 
+            yum install -y golang
             # Install CRDs
             make install
             #kustomize build config/crd | kubectl apply -f -
