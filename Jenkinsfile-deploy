@@ -85,6 +85,7 @@ node(label) {
             wget -q https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
             tar -C /usr/local -xzf go1.18.1.linux-amd64.tar.gz
             export PATH=$PATH:/usr/local/go/bin
+            mkdir bin
             #pwd
             #ls -la
             # Install CRDs
@@ -103,6 +104,7 @@ node(label) {
 }catch (e) {
         sh """ 
           ls -la 
+          ls -la bin
         """
         println "Failed to deploy - ${currentBuild.fullDisplayName}"
         notifySlack('UNSTABLE')
