@@ -80,16 +80,17 @@ node(label) {
             echo "${version}"
             #apk update && apk add make
             #yum update -y
-            yum install -y make wget 
+            yum install -y make wget
+            yum install -y gcc
             #yum install -y golang
             wget -q https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
             tar -C /usr/local -xzf go1.18.1.linux-amd64.tar.gz
             export PATH=$PATH:/usr/local/go/bin
             #mkdir bin
-            GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
-            ls -la
+            #GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+            #ls -la
             GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
-            ls -la
+            #ls -la
             #cp $HOME/go/bin/controller-gen ./bin
             #pwd
             #ls -la
