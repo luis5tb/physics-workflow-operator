@@ -77,3 +77,11 @@ vars:
 #    kind: Service
 #    version: v1
 #    name: webhook-service
+
+
+#apiVersion: kustomize.config.k8s.io/v1beta1
+#kind: Kustomization
+#images:
+#- name: controller
+#  newName: registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator
+#  newTag: v0.0.1
