@@ -80,7 +80,7 @@ node(label) {
             echo "${version}"
             #apk update && apk add make
             #yum update -y
-            yum install -y make 
+            yum install -y make wget 
             #yum install -y golang
             wget https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
             sudo tar -C /usr/local -xzf go1.13.linux-amd64.tar.gz
