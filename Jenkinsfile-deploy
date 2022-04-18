@@ -85,8 +85,8 @@ node(label) {
             wget -q https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
             tar -C /usr/local -xzf go1.18.1.linux-amd64.tar.gz
             export PATH=$PATH:/usr/local/go/bin
-            pwd
-            ls -la
+            #pwd
+            #ls -la
             # Install CRDs
             make install
             #kustomize build config/crd | kubectl apply -f -
@@ -101,6 +101,7 @@ node(label) {
      }
     }
 }catch (e) {
+        ls -la
         println "Failed to deploy - ${currentBuild.fullDisplayName}"
         notifySlack('UNSTABLE')
            }
