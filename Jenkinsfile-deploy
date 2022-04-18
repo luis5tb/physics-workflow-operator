@@ -104,10 +104,6 @@ node(label) {
      }
     }
 }catch (e) {
-        #sh """ 
-        #  ls -la 
-        #  ls -la bin
-        #"""
         println "Failed to deploy - ${currentBuild.fullDisplayName}"
         notifySlack('UNSTABLE')
            }
