@@ -81,7 +81,10 @@ node(label) {
             #apk update && apk add make
             #yum update -y
             yum install -y make 
-            yum install -y golang
+            #yum install -y golang
+            wget https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
+            sudo tar -C /usr/local -xzf go1.13.linux-amd64.tar.gz
+            export PATH=$PATH:/usr/local/go/bin
             # Install CRDs
             make install
             #kustomize build config/crd | kubectl apply -f -
