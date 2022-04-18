@@ -78,6 +78,7 @@ node(label) {
             export KUBECONFIG=$CONFIG
             echo "${projectname}"
             echo "${version}"
+            apk update && apk add make
             # Install CRDs
             make install
             #kustomize build config/crd | kubectl apply -f -
