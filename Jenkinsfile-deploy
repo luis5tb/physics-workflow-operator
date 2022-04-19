@@ -86,8 +86,8 @@ node(label) {
             wget -q https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
             tar -C /usr/local -xzf go1.18.1.linux-amd64.tar.gz
             export PATH=$PATH:/usr/local/go/bin
-            whereis kustomize
-            cp /usr/local/bin/kustomize /home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin
+            #whereis kustomize
+            cp /usr/bin/kustomize /home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin
             #mkdir bin
             #GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
             #ls -la
