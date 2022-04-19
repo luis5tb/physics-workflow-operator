@@ -78,30 +78,18 @@ node(label) {
             export KUBECONFIG=$CONFIG
             echo "${projectname}"
             echo "${version}"
-            #apk update && apk add make
-            #yum update -y
-            yum install -y make wget
-            yum install -y gcc
-            #yum install -y golang
+            # Install building tools
+            yum install -y make wget gcc
+            # Install golang
             wget -q https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
             tar -C /usr/local -xzf go1.18.1.linux-amd64.tar.gz
             export PATH=$PATH:/usr/local/go/bin
-            #whereis kustomize
-            #mkdir bin
-            #GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
-            #ls -la
-            #GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go install sigs.k8s.io/kustomize/kustomize/v3@v3.8.7
             GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
             cp /usr/bin/kustomize /home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin/
-            #ls -la
-            #cp $HOME/go/bin/controller-gen ./bin
-            #pwd
-            #ls -la
             # Install CRDs
             make install
-            #kustomize build config/crd | kubectl apply -f -
             # Deploy Controller
-            make deploy
+            make deploy IMG="$controller"
             #cd config/manager && kustomize edit set image controller="$controller"
             ##kustomize edit set tag "${version}"
             #cd ../..
