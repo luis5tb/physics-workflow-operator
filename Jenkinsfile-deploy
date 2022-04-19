@@ -87,6 +87,7 @@ node(label) {
             GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
             cp /usr/bin/kustomize /home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin/
             # Install CRDs
+            make uninstall
             make install
             # Deploy Controller
             make deploy IMG="$controller"
