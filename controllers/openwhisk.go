@@ -512,6 +512,9 @@ func CreateServiceForOpenWhiskProxy(workflowManifest *wp5v1alpha1.Workflow) *cor
 	var PHYSICS_OW_PROXY_ENDPOINT string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
 	//var PHYSICS_OW_PROXY_HOST string
 	//var PHYSICS_OW_PROXY_PORT int64
+	if strings.Count(PHYSICS_OW_PROXY_ENDPOINT, ":") < 2 {
+		PHYSICS_OW_PROXY_ENDPOINT += ":80"
+	}
 	PHYSICS_OW_PROXY_PORT, err := strconv.ParseInt(strings.Split(PHYSICS_OW_PROXY_ENDPOINT, ":")[2], 10, 0)
 	if err != nil {
 		PHYSICS_OW_PROXY_PORT = 8090
@@ -544,6 +547,9 @@ func CreateDeploymentForOpenWhiskProxy(workflowManifest *wp5v1alpha1.Workflow) *
 	var PHYSICS_OW_PROXY_IPP string = lookupEnv("PHYSICS_OW_PROXY_IPP", "Always")
 	//var PHYSICS_OW_PROXY_HOST string
 	//var PHYSICS_OW_PROXY_PORT int64
+	if strings.Count(PHYSICS_OW_PROXY_ENDPOINT, ":") < 2 {
+		PHYSICS_OW_PROXY_ENDPOINT += ":80"
+	}
 	PHYSICS_OW_PROXY_PORT, err := strconv.ParseInt(strings.Split(PHYSICS_OW_PROXY_ENDPOINT, ":")[2], 10, 0)
 	if err != nil {
 		PHYSICS_OW_PROXY_PORT = 8090
