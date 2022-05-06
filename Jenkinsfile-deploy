@@ -88,7 +88,7 @@ node(label) {
             cp /usr/bin/kustomize /home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin/
             # Install CRDs
             #make uninstall
-            make install
+            #make install
             # Deploy Controller
             make deploy IMG="$controller"
             #cd config/manager && kustomize edit set image controller="$controller"
