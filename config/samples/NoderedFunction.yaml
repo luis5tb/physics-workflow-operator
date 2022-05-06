@@ -2,7 +2,7 @@ apiVersion: wp5.physics-faas.eu/v1alpha1
 kind: Workflow
 metadata:
   name: hello-noderedfunction
-  namespace: default
+  namespace: physics-atos
   annotations:
     id: "7c6a3de135b840c5"
     version: "1"

@@ -31,13 +31,13 @@ type WorkflowSpec struct {
 
 	Type string `json:"type,omitempty"`
 	// Platform is the target platform, it can be OpenWhisk, Knative, ...
-	Platform string `json:"platform"`
+	Platform string `json:"platform,omitempty"`
 	// Exection is the type of execution mode: NativeSequence, NoderedSequence, or Service
 	Execution string `json:"execution,omitempty"`
 	Native    bool   `json:"native,omitempty"`
 
 	// ListOfActions is the ordered list of actions to execute
-	ListOfActions []ActionId `json:"listOfActions"`
+	ListOfActions []ActionId `json:"listOfActions,omitempty"`
 
 	Actions []Action `json:"actions"`
 }

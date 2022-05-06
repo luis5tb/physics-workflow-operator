@@ -1,7 +1,8 @@
 apiVersion: work.open-cluster-management.io/v1
 kind: ManifestWork
 metadata:
-  namespace: kind-physics
+  #namespace: kind-physics
+  namespace: okdhub-cluster
   name: hello-work-sequence
 spec:
   workload:
@@ -10,7 +11,8 @@ spec:
         kind: Workflow
         metadata:
           name: hello-sequence
-          namespace: default
+          #namespace: default
+          namespace: physics-atos
           annotations:
             id: "19fe4293742e0b2c"
             version: "1"

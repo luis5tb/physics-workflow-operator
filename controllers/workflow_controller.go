@@ -19,12 +19,8 @@ package controllers
 import (
 	"context"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -59,7 +55,7 @@ const workflowManifestFinalizer = "workflowmanifest/finalizer"
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var logger = log.FromContext(ctx)
-	var PHYSICS_OW_PROXY_NAME string = lookupEnv("PHYSICS_OW_PROXY_NAME", "physics-ow-proxy")
+	//var PHYSICS_OW_PROXY_NAME string = lookupEnv("PHYSICS_OW_PROXY_NAME", "physics-ow-proxy")
 	// TODO(user): your logic here
 	logger.Info("Reconcile() => Getting Workflow Manifest...")
 	workflowManifest := &wp5v1alpha1.Workflow{}
@@ -74,42 +70,44 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	// Check if the deployment already exists, if not create a new one
-	foundDep := &appsv1.Deployment{}
-	err = r.Get(ctx, types.NamespacedName{Name: PHYSICS_OW_PROXY_NAME, Namespace: workflowManifest.Namespace}, foundDep)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new deployment
-		dep := CreateDeploymentForOpenWhiskProxy(workflowManifest)
-		logger.Info("Creating a new OpenWhisk Proxy deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-		err = r.Create(ctx, dep)
-		if err != nil {
-			logger.Error(err, "Failed to create OpenWhisk Proxy deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+	/*
+		// Check if the deployment already exists, if not create a new one
+		foundDep := &appsv1.Deployment{}
+		err = r.Get(ctx, types.NamespacedName{Name: PHYSICS_OW_PROXY_NAME, Namespace: workflowManifest.Namespace}, foundDep)
+		if err != nil && errors.IsNotFound(err) {
+			// Define a new deployment
+			dep := CreateDeploymentForOpenWhiskProxy(workflowManifest)
+			logger.Info("Creating a new OpenWhisk Proxy deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			err = r.Create(ctx, dep)
+			if err != nil {
+				logger.Error(err, "Failed to create OpenWhisk Proxy deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+				return ctrl.Result{}, err
+			}
+			// Deployment created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		} else if err != nil {
+			logger.Error(err, "Failed to get OpenWhisk Proxy deployment")
 			return ctrl.Result{}, err
 		}
-		// Deployment created successfully - return and requeue
-		return ctrl.Result{Requeue: true}, nil
-	} else if err != nil {
-		logger.Error(err, "Failed to get OpenWhisk Proxy deployment")
-		return ctrl.Result{}, err
-	}
-	// Check if the service already exists, if not create a new one
-	foundSvc := &corev1.Service{}
-	err = r.Get(ctx, types.NamespacedName{Name: PHYSICS_OW_PROXY_NAME, Namespace: workflowManifest.Namespace}, foundSvc)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new service
-		svc := CreateServiceForOpenWhiskProxy(workflowManifest)
-		logger.Info("Creating a new OpenWhisk Proxy service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
-		err = r.Create(ctx, svc)
-		if err != nil {
-			logger.Error(err, "Failed to create OpenWhisk Proxy service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+		// Check if the service already exists, if not create a new one
+		foundSvc := &corev1.Service{}
+		err = r.Get(ctx, types.NamespacedName{Name: PHYSICS_OW_PROXY_NAME, Namespace: workflowManifest.Namespace}, foundSvc)
+		if err != nil && errors.IsNotFound(err) {
+			// Define a new service
+			svc := CreateServiceForOpenWhiskProxy(workflowManifest)
+			logger.Info("Creating a new OpenWhisk Proxy service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+			err = r.Create(ctx, svc)
+			if err != nil {
+				logger.Error(err, "Failed to create OpenWhisk Proxy service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+				return ctrl.Result{}, err
+			}
+			// Service created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		} else if err != nil {
+			logger.Error(err, "Failed to get OpenWhisk Proxy service")
 			return ctrl.Result{}, err
 		}
-		// Service created successfully - return and requeue
-		return ctrl.Result{Requeue: true}, nil
-	} else if err != nil {
-		logger.Error(err, "Failed to get OpenWhisk Proxy service")
-		return ctrl.Result{}, err
-	}
+	*/
 
 	// Check if the workflowManifest instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.

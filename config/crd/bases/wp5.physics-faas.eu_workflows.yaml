@@ -160,8 +160,6 @@ spec:
                 type: string
             required:
             - actions
-            - listOfActions
-            - platform
             type: object
           status:
             description: WorkflowStatus defines the observed state of Workflow
