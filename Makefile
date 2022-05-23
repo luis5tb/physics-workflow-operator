@@ -107,15 +107,17 @@ build: generate fmt vet ## Build manager binary.
 
 
 MYIP = $(shell ./myip.sh)
-PROXY_EP=export PHYSICS_OW_PROXY_ENDPOINT=http://localhost:8090
+PHYSICS_OW_PROXY_ENDPOINT='http://localhost:31011'
+PROXY_EP=export PHYSICS_OW_PROXY_ENDPOINT=http://localhost:31011
+#PROXY_EP=export PHYSICS_OW_PROXY_ENDPOINT=http://localhost:8090
 #PROXY_EP=export PHYSICS_OW_PROXY_ENDPOINT=http://physics-ow-proxy.default:8090
 OW_EP=export PHYSICS_OW_ENDPOINT=http://$(MYIP):3233
 #OW_EP=export PHYSICS_OW_ENDPOINT=http://localhost:3233
 PROXY_IPP=export PHYSICS_OW_PROXY_IPP=IfNotPresent
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
-
+    #go run ./main.go
+	PHYSICS_OW_PROXY_ENDPOINT=${PHYSICS_OW_PROXY_ENDPOINT} go run ./main.go
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.

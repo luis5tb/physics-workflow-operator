@@ -18,8 +18,12 @@ package controllers
 
 import (
 	"context"
+	"net/url"
+	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -116,6 +120,11 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if !isWorkflowManifestMarkedToBeDeleted &&
 		controllerutil.ContainsFinalizer(workflowManifest, workflowManifestFinalizer) {
 		err := UpdateExternalResources(logger, req.Namespace, workflowManifest)
+		r.UpdateWorkflowStatus(ctx, workflowManifest)
+		//err2 := r.UpdateWorkflowStatus(ctx, workflowManifest)
+		//if err2 != nil {
+		//	return ctrl.Result{}, err2
+		//}
 		if err != nil {
 			//panic(err)
 			return ctrl.Result{}, err
@@ -155,7 +164,7 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	logger.Info("Reconcile() end.")
 
 	return ctrl.Result{}, nil
-}
+} // Reconcile()
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *WorkflowReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -163,7 +172,7 @@ func (r *WorkflowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&wp5v1alpha1.Workflow{}).
 		//Owns(&appsv1.Deployment{}).
 		Complete(r)
-}
+} // SetupWithManager()
 
 func (r *WorkflowReconciler) finalizeWorkflowManifest(ctx context.Context, req ctrl.Request, workflowManifest *wp5v1alpha1.Workflow) error {
 	// TODO(user): Add the cleanup steps that the operator
@@ -179,4 +188,156 @@ func (r *WorkflowReconciler) finalizeWorkflowManifest(ctx context.Context, req c
 	}
 	logger.Info("Successfully finalized workflowManifest")
 	return nil
+} // finalizeWorkflowManifest()
+
+func (r *WorkflowReconciler) UpdateWorkflowStatus(ctx context.Context, workflowManifest *wp5v1alpha1.Workflow) error {
+	var logger = log.FromContext(ctx)
+	logger.Info("UpdateWorkflowStatus()...")
+	var condition metav1.Condition
+	var conditions []metav1.Condition
+	//Update workflow status
+	conditions = workflowManifest.Status.Conditions
+	if len(conditions) == 0 {
+		condition = metav1.Condition{
+			Type:               "Applied",
+			Status:             "False",
+			ObservedGeneration: workflowManifest.ObjectMeta.Generation,
+			LastTransitionTime: metav1.Time{Time: time.Now()},
+			Reason:             "Unknown",
+			Message:            "Pending to apply",
+		}
+		conditions = append(conditions, condition)
+		condition = metav1.Condition{
+			Type:               "Available",
+			Status:             "False",
+			ObservedGeneration: workflowManifest.ObjectMeta.Generation,
+			LastTransitionTime: metav1.Time{Time: time.Now()},
+			Reason:             "Unknown",
+			Message:            "Not ready",
+		}
+		conditions = append(conditions, condition)
+	} // len(conditions) == 0
+	var stop bool = false
+	var appliedCount int = 0
+	var availableCount int = 0
+	for k := range conditions {
+		conditions[k].Status = "False"
+		conditions[k].Reason = ""
+		conditions[k].Message = ""
+	}
+	//for idx, action := range workflowManifest.Spec.Actions {
+	for idx := range workflowManifest.Spec.Actions {
+		if stop {
+			break
+		}
+		//UpdateActionStatus(workflowManifest, &action, "")
+		switch workflowManifest.Status.ActionStatuses[idx].State {
+		case "Error":
+			stop = true
+		case "Applied":
+			appliedCount++
+		case "Available":
+			availableCount++
+		default: // Unknown
+		} // switch workflowManifest.Status.ActionStatuses[idx].State
+	} // range workflowManifest.Spec.Actions
+	actionCount := len(workflowManifest.Spec.Actions)
+	if actionCount == appliedCount+availableCount {
+		for k := range conditions {
+			if conditions[k].Type == "Applied" {
+				conditions[k].Status = "True"
+				conditions[k].Reason = "Registered"
+				conditions[k].Message = "Actions registered"
+			} else {
+				if conditions[k].Type == "Available" {
+					conditions[k].Status = "False"
+					conditions[k].Reason = "Unready"
+					conditions[k].Message = "Waiting availability of remote actions"
+					if actionCount == availableCount {
+						conditions[k].Status = "True"
+						conditions[k].Reason = "Ready"
+						conditions[k].Message = "Ready to serving"
+					}
+				}
+			}
+			conditions[k].LastTransitionTime = metav1.Time{Time: time.Now()}
+			conditions[k].ObservedGeneration = workflowManifest.ObjectMeta.Generation
+		}
+	}
+	workflowManifest.Status.Conditions = conditions
+	err := r.Status().Update(ctx, workflowManifest)
+	if err != nil {
+		logger.Error(err, "Failed to update Workflow status")
+		//return ctrl.Result{}, err
+		return err
+	}
+	logger.Info("UpdateWorkflowStatus() end.")
+	return nil
+} // UpdateWorkflowStatus()
+
+func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alpha1.Action, message string) {
+	//var PHYSICS_ACTION_PROXY_IMG string = lookupEnv("PHYSICS_ACTION_PROXY_IMG", "action-proxy")
+	var PHYSICS_ACTION_PROXY_PARAM string = lookupEnv("PHYSICS_ACTION_PROXY_PARAM", "backendURL")
+	var found bool = false
+	var idx int = -1
+	var actionStatus wp5v1alpha1.ActionStatus
+	for k := range workflowManifest.Status.ActionStatuses {
+		if workflowManifest.Status.ActionStatuses[k].Id == action.Id {
+			found = true
+			idx = k
+		}
+	}
+	if found {
+		actionStatus = workflowManifest.Status.ActionStatuses[idx]
+	} else { // new or incremental update
+		actionStatus = wp5v1alpha1.ActionStatus{
+			Name:       action.Name,
+			Namespace:  workflowManifest.Namespace + "/" + workflowManifest.Name,
+			Id:         action.Id,
+			Version:    action.Version,
+			Runtime:    action.Runtime,
+			State:      "Unknown",
+			Message:    "",
+			BackendURL: "",
+			//Remote:     "false",
+		}
+		workflowManifest.Status.ActionStatuses = append(workflowManifest.Status.ActionStatuses, actionStatus)
+		idx = len(workflowManifest.Status.ActionStatuses) - 1
+	}
+	var actionError bool = false
+	if len(message) > 0 {
+		actionError = true
+	}
+	if !actionError { // Error registering function
+		actionStatus.State = "Applied" // Registered
+		actionStatus.Message = ""
+		if _, ok := action.Annotations["remote"]; ok { // Remote function
+			actionStatus.Remote = "true"
+			//if action.Runtime == "blackbox" && action.Image == PHYSICS_ACTION_PROXY_IMG { // Remote function
+			if input, ok := action.FunctionInput[PHYSICS_ACTION_PROXY_PARAM]; ok {
+				if len(input.Value) > 0 {
+					actionStatus.State = "Available" // Ready to serving
+					actionStatus.BackendURL = input.Value
+				}
+			}
+		} else { // Local function
+			actionStatus.State = "Available" // Ready to serving
+			actionStatus.BackendURL = setBackendURL(&actionStatus, workflowManifest.Annotations["cluster"], action.Annotations["api-id"])
+		}
+	} else {
+		actionStatus.State = "Error"
+		actionStatus.Message = message
+	}
+	workflowManifest.Status.ActionStatuses[idx] = actionStatus
+} // UpdateActionStatus()
+
+func setBackendURL(actionStatus *wp5v1alpha1.ActionStatus, cluster string, apiID string) string {
+	var result string
+	defaultBaseUrl := "http://" + cluster + "-sub-ow.openwhisk.svc.clusterset.local:8080/api/"
+	var PHYSICS_APIGATEWAY_BASEURL string = lookupEnv("PHYSICS_APIGATEWAY_BASEURL", defaultBaseUrl)
+	pckg := strings.Split(actionStatus.Namespace, "/")[1] // "namespace/package"
+	pckg = strings.Replace(url.QueryEscape(pckg), "+", "%20", -1)
+	name := strings.Replace(url.QueryEscape(actionStatus.Name), "+", "%20", -1)
+	result = PHYSICS_APIGATEWAY_BASEURL + apiID + "/" + pckg + "/" + name
+	return result
 }

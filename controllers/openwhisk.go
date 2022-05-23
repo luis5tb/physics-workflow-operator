@@ -23,15 +23,10 @@ import (
 	"encoding/json"
 	goerrors "errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
-
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/go-logr/logr"
 	wp5v1alpha1 "gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/api/v1alpha1"
@@ -51,7 +46,7 @@ type FaaSManager struct {
 	Name string
 }
 
-func (fm *FaaSManager) CreateFunction(namespace string, action wp5v1alpha1.Action) (int, string) {
+func (fm *FaaSManager) CreateFunction(namespace string, action *wp5v1alpha1.Action) (int, string) {
 	statusCode, status := fm.UpdateFunction(namespace, action, true)
 	return statusCode, status
 	//return resp.StatusCode, resp.Status
@@ -110,7 +105,7 @@ func (fm *FaaSManager) ReadFunction(namespace string, name string) (int, string)
 	return resp.StatusCode, resp.Status
 }
 
-func (fm *FaaSManager) UpdateFunction(namespace string, action wp5v1alpha1.Action, isNew bool) (int, string) {
+func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Action, isNew bool) (int, string) {
 	var OW_API_HOST string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
 	var baseUrl string = OW_API_HOST + OW_API_FUNC_PATH
 	var jsonStr []byte
@@ -146,7 +141,7 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action wp5v1alpha1.Actio
 		Sequence []string `json:"sequence,omitempty"`
 	}{
 		action.Name, namespace, action.Version, action.Runtime, action.Code,
-		"", action.Image, false, true,
+		"", action.Image, false, true, // Action Web interface by default
 		nil, nil, nil, nil,
 	}
 	if len(action.FunctionInput) > 0 {
@@ -251,13 +246,44 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action wp5v1alpha1.Actio
 		return resp.StatusCode, resp.Status
 	}
 	defer resp.Body.Close()
-	//body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		//panic(err)
 		return http.StatusInternalServerError, err.Error()
+	} else {
+		setActionApiID(action, &body)
 	}
 	//fmt.Println(string(body))
 	return resp.StatusCode, resp.Status
+}
+
+func setActionApiID(action *wp5v1alpha1.Action, body *[]byte) {
+	//fmt.Println("DEBUG:", string(body))
+	var wiredAction map[string]interface{}
+	err := json.Unmarshal(*body, &wiredAction)
+	//fmt.Println("DEBUG:", err)
+	if err == nil {
+		//fmt.Println("DEBUG:", wiredAction)
+		wiredAnnotations, ok := wiredAction["annotations"].([]interface{})
+		if ok {
+			//fmt.Println("DEBUG:", wiredAnnotations)
+			for k := range wiredAnnotations {
+				wiredAnnotation, ok := wiredAnnotations[k].(map[string]interface{})
+				if ok {
+					//fmt.Println("DEBUG:", wiredAnnotation)
+					key, ok := wiredAnnotation["key"].(string)
+					if ok && key == "api-id" {
+						//fmt.Println("DEBUG:", key)
+						value, ok := wiredAnnotation["value"].(string)
+						if ok {
+							action.Annotations[key] = value
+							//fmt.Println("DEBUG:", key, value)
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 /*
@@ -331,7 +357,7 @@ func normalizeNamespace(namespace string) string {
 		//result = namespace + "/" + pckg
 	}
 	return result
-}
+} // normalizeNamespace()
 
 func CleanUpExternalResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
 	//var logger = log.FromContext(ctx)
@@ -379,11 +405,11 @@ func CleanUpExternalResources(logger logr.Logger, namespace string, workflowMani
 	//}		// for workflowManifest.Spec.Packages
 	logger.Info("cleanUp() end.")
 	return nil
-}
+} // CleanUpExternalResources()
 
 func UpdateExternalResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
 	//var logger = log.FromContext(ctx)
-	logger.Info("updateAll()...")
+	logger.Info("UpdateExternalResources()...")
 	fm := &FaaSManager{
 		Name: "openwhisk",
 	}
@@ -397,24 +423,42 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 			action.Annotations = make(wp5v1alpha1.Annotations)
 		}
 		action.Annotations["id"] = action.Id
+		//	Setup remote actions
+		if cluster, ok := workflowManifest.Annotations["cluster"]; ok {
+			if target, ok := action.Annotations["cluster"]; ok {
+				if cluster != target {
+					action.Annotations["remote"] = "true"
+					action.Image = "action-proxy"
+					action.Runtime = "blackbox"
+				}
+			}
+		}
+		//
 		logger.Info("Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, action.Name)
 		logger.Info("Read Function: ", "statusCode", statusCode, "status", status)
 		if statusCode == 404 { // Not found => New
-			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, action)
+			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, &action)
 			logger.Info("Create Function: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
+				UpdateActionStatus(workflowManifest, &action, status)
 				return goerrors.New("Create function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
 			}
 		} else {
 			if statusCode == 200 { // Found => Update
-				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, action, false)
+				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, &action, false)
 				logger.Info("Update Function: ", "statusCode", statusCode, "status", status)
 				if statusCode != 200 {
+					UpdateActionStatus(workflowManifest, &action, status)
 					return goerrors.New("Update function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
 				}
 			}
 		}
+		if statusCode == 500 { // Connection refused
+			UpdateActionStatus(workflowManifest, &action, status)
+			return goerrors.New("Create/Update function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
+		}
+		UpdateActionStatus(workflowManifest, &action, "")
 	}
 	if workflowManifest.Spec.Execution == "NativeSequence" {
 		var actionList string
@@ -439,39 +483,49 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 		logger.Info("Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
 		logger.Info("Read Sequence: ", "statusCode", statusCode, "status", status)
+		var sequenceAction wp5v1alpha1.Action
 		if statusCode == 404 { // Not found => New
-			var sequenceAction wp5v1alpha1.Action
 			sequenceAction.Name = sequence.Name
 			sequenceAction.Runtime = "sequence"
 			sequenceAction.Annotations = sequence.Annotations
+			sequenceAction.Id = workflowManifest.Annotations["id"]
+			sequenceAction.Version = workflowManifest.Annotations["version"]
 			//sequenceAction.Code = sequence.Actions
 			sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
-			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, sequenceAction)
+			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, &sequenceAction)
 			logger.Info("Create Sequence: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
+				UpdateActionStatus(workflowManifest, &sequenceAction, status)
 				return goerrors.New("Create Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
 			}
 		} else {
 			if statusCode == 200 { // Found => Update
-				var sequenceAction wp5v1alpha1.Action
 				sequenceAction.Name = sequence.Name
 				sequenceAction.Runtime = "sequence"
 				sequenceAction.Annotations = sequence.Annotations
+				sequenceAction.Id = workflowManifest.Annotations["id"]
+				sequenceAction.Version = workflowManifest.Annotations["version"]
 				//sequenceAction.Code = sequence.Actions
 				sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
-				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, sequenceAction, false)
+				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, &sequenceAction, false)
 				logger.Info("Update Sequence: ", "statusCode", statusCode, "status", status)
 				if statusCode != 200 {
+					UpdateActionStatus(workflowManifest, &sequenceAction, status)
 					return goerrors.New("Update Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
 				}
 			}
 		}
+		if statusCode == 500 { // Connection refused
+			UpdateActionStatus(workflowManifest, &sequenceAction, status)
+			return goerrors.New("Create/Update Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
+		}
+		UpdateActionStatus(workflowManifest, &sequenceAction, "")
 	} // if workflowManifest.Spec.Execution == "NativeSequence"
 	//}		// for pkgInfo.Sequences
 	//}		// for workflowManifest.Spec.Packages
-	logger.Info("updateAll() end.")
+	logger.Info("UpdateExternalResources() end.")
 	return nil
-}
+} // UpdateExternalResources()
 
 func normalizeSeqActionsFQN(sequence string, namespace string, pckg string) string {
 	var result string
@@ -505,8 +559,9 @@ func normalizeSeqActionsFQN(sequence string, namespace string, pckg string) stri
 		result += normalizeNamespace(actionPath) + "/" + strings.TrimSpace(actionName)
 	}
 	return result
-}
+} // normalizeSeqActionsFQN()
 
+/*
 func CreateServiceForOpenWhiskProxy(workflowManifest *wp5v1alpha1.Workflow) *corev1.Service {
 	var PHYSICS_OW_PROXY_NAME string = lookupEnv("PHYSICS_OW_PROXY_NAME", "physics-ow-proxy")
 	var PHYSICS_OW_PROXY_ENDPOINT string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
@@ -537,7 +592,7 @@ func CreateServiceForOpenWhiskProxy(workflowManifest *wp5v1alpha1.Workflow) *cor
 		},
 	}
 	return svc
-}
+} // CreateServiceForOpenWhiskProxy()
 
 func CreateDeploymentForOpenWhiskProxy(workflowManifest *wp5v1alpha1.Workflow) *appsv1.Deployment {
 	var PHYSICS_OW_PROXY_NAME string = lookupEnv("PHYSICS_OW_PROXY_NAME", "physics-ow-proxy")
@@ -599,12 +654,12 @@ func CreateDeploymentForOpenWhiskProxy(workflowManifest *wp5v1alpha1.Workflow) *
 	// Set OpenwhiskManifest instance as the owner and controller
 	//ctrl.SetControllerReference(openwhiskManifest, dep, r.Scheme)
 	return dep
-}
-
+} // CreateDeploymentForOpenWhiskProxy()
+*/
 func lookupEnv(name string, value string) string {
 	result, ok := os.LookupEnv(name) // os.Getenv(name)
 	if !ok {
 		result = value
 	}
 	return result
-}
+} // lookupEnv()

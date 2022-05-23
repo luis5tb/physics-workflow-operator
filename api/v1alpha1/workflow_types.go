@@ -98,12 +98,27 @@ type SemanticsInfo struct {
 type WorkflowStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	// Conditions represent the latest available observations of an object's state
+	Conditions     []metav1.Condition `json:"conditions"`
+	ActionStatuses []ActionStatus     `json:"actionStatus"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+type ActionStatus struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"` // namespace + package ?
+	//Package	string `json:"package"`
+	Id         string `json:"id"`
+	Version    string `json:"version"`
+	Runtime    string `json:"runtime"`
+	State      string `json:"state"` // Unknown, Applied, Available, Error
+	Message    string `json:"message"`
+	BackendURL string `json:"backendURL"`
+	Remote     string `json:"remote,omitempty"`
+}
 
 // Workflow is the Schema for the workflows API
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
 type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
