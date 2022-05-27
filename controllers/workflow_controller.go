@@ -222,7 +222,7 @@ func (r *WorkflowReconciler) UpdateWorkflowStatus(ctx context.Context, workflowM
 	var availableCount int = 0
 	for k := range conditions {
 		conditions[k].Status = "False"
-		conditions[k].Reason = ""
+		conditions[k].Reason = "Unknown"
 		conditions[k].Message = ""
 	}
 	//for idx, action := range workflowManifest.Spec.Actions {
@@ -276,7 +276,7 @@ func (r *WorkflowReconciler) UpdateWorkflowStatus(ctx context.Context, workflowM
 } // UpdateWorkflowStatus()
 
 func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alpha1.Action, message string) {
-	//var PHYSICS_ACTION_PROXY_IMG string = lookupEnv("PHYSICS_ACTION_PROXY_IMG", "action-proxy")
+	//var PHYSICS_ACTION_PROXY_IMAGE string = lookupEnv("PHYSICS_ACTION_PROXY_IMAGE", "action-proxy")
 	var PHYSICS_ACTION_PROXY_PARAM string = lookupEnv("PHYSICS_ACTION_PROXY_PARAM", "backendURL")
 	var found bool = false
 	var idx int = -1
@@ -313,7 +313,7 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 		actionStatus.Message = ""
 		if _, ok := action.Annotations["remote"]; ok { // Remote function
 			actionStatus.Remote = "true"
-			//if action.Runtime == "blackbox" && action.Image == PHYSICS_ACTION_PROXY_IMG { // Remote function
+			//if action.Runtime == "blackbox" && action.Image == PHYSICS_ACTION_PROXY_IMAGE { // Remote function
 			if input, ok := action.FunctionInput[PHYSICS_ACTION_PROXY_PARAM]; ok {
 				if len(input.Value) > 0 {
 					actionStatus.State = "Available" // Ready to serving
@@ -333,11 +333,20 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 
 func setBackendURL(actionStatus *wp5v1alpha1.ActionStatus, cluster string, apiID string) string {
 	var result string
-	defaultBaseUrl := "http://" + cluster + "-sub-ow.openwhisk.svc.clusterset.local:8080/api/"
-	var PHYSICS_APIGATEWAY_BASEURL string = lookupEnv("PHYSICS_APIGATEWAY_BASEURL", defaultBaseUrl)
+	var PHYSICS_BACKENDURL_PATTERN string = lookupEnv("PHYSICS_BACKENDURL_PATTERN",
+		"http://@REMOTE-CLUSTER--sub-ow.openwhisk.svc.clusterset.local/api/@API-ID/@PACKAGE/@ACTION")
+	//var PHYSICS_APIGATEWAY_BASEURL string = lookupEnv("PHYSICS_APIGATEWAY_BASEURL",
+	//		"http://" + cluster + "-sub-ow.openwhisk.svc.clusterset.local:8080/api/")
+	namespace := strings.Split(actionStatus.Namespace, "/")[0] // "namespace/package"
+	namespace = strings.Replace(url.QueryEscape(namespace), "+", "%20", -1)
 	pckg := strings.Split(actionStatus.Namespace, "/")[1] // "namespace/package"
 	pckg = strings.Replace(url.QueryEscape(pckg), "+", "%20", -1)
-	name := strings.Replace(url.QueryEscape(actionStatus.Name), "+", "%20", -1)
-	result = PHYSICS_APIGATEWAY_BASEURL + apiID + "/" + pckg + "/" + name
+	action := strings.Replace(url.QueryEscape(actionStatus.Name), "+", "%20", -1)
+	//result = PHYSICS_APIGATEWAY_BASEURL + apiID + "/" + pckg + "/" + name
+	result = strings.ReplaceAll(PHYSICS_BACKENDURL_PATTERN, "@REMOTE-CLUSTER", cluster)
+	result = strings.ReplaceAll(result, "@API-ID", apiID)
+	result = strings.ReplaceAll(result, "@NAMESPACE", namespace) // Same as apiID?
+	result = strings.ReplaceAll(result, "@PACKAGE", pckg)
+	result = strings.ReplaceAll(result, "@ACTION", action)
 	return result
 }

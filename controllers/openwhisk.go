@@ -123,13 +123,15 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Acti
 		Image       string `json:"image,omitempty"`
 		Native      bool   `json:"native,omitempty"`
 		Web         bool   `json:"web,omitempty"`
+		Gateway     bool   `json:"gateway,omitempty"`
 		Annotations []struct {
 			Key   string `json:"key,omitempty"`
 			Value string `json:"value,omitempty"`
 		} `json:"annotations,omitempty"`
 		Inputs []struct {
-			Name string `json:"name,omitempty"`
-			Type string `json:"type,omitempty"`
+			Name  string `json:"name,omitempty"`
+			Type  string `json:"type,omitempty"`
+			Value string `json:"value,omitempty"`
 		} `json:"inputs,omitempty"`
 		Limits map[string]int `json:"limits,omitempty"`
 		//Limits struct {
@@ -141,19 +143,21 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Acti
 		Sequence []string `json:"sequence,omitempty"`
 	}{
 		action.Name, namespace, action.Version, action.Runtime, action.Code,
-		"", action.Image, false, true, // Action Web interface by default
+		"", action.Image, false, true, true, // Action Web interface by default
 		nil, nil, nil, nil,
 	}
 	if len(action.FunctionInput) > 0 {
 		params.Inputs = make([]struct {
-			Name string `json:"name,omitempty"`
-			Type string `json:"type,omitempty"`
+			Name  string `json:"name,omitempty"`
+			Type  string `json:"type,omitempty"`
+			Value string `json:"value,omitempty"`
 		}, 0)
 		for name, value := range action.FunctionInput {
 			input := struct {
-				Name string `json:"name,omitempty"`
-				Type string `json:"type,omitempty"`
-			}{name, value.Type}
+				Name  string `json:"name,omitempty"`
+				Type  string `json:"type,omitempty"`
+				Value string `json:"value,omitempty"`
+			}{name, value.Type, value.Value}
 			params.Inputs = append(params.Inputs, input)
 		}
 	}
@@ -410,6 +414,7 @@ func CleanUpExternalResources(logger logr.Logger, namespace string, workflowMani
 func UpdateExternalResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
 	//var logger = log.FromContext(ctx)
 	logger.Info("UpdateExternalResources()...")
+	var PHYSICS_ACTION_PROXY_IMAGE string = lookupEnv("PHYSICS_ACTION_PROXY_IMAGE", "action-proxy:v1")
 	fm := &FaaSManager{
 		Name: "openwhisk",
 	}
@@ -428,7 +433,7 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 			if target, ok := action.Annotations["cluster"]; ok {
 				if cluster != target {
 					action.Annotations["remote"] = "true"
-					action.Image = "action-proxy"
+					action.Image = PHYSICS_ACTION_PROXY_IMAGE
 					action.Runtime = "blackbox"
 				}
 			}
