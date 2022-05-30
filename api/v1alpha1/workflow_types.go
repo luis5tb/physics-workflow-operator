@@ -99,8 +99,9 @@ type WorkflowStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	// Conditions represent the latest available observations of an object's state
-	Conditions     []metav1.Condition `json:"conditions"`
-	ActionStatuses []ActionStatus     `json:"actionStatus"`
+	Conditions     []metav1.Condition `json:"conditions,omitempty"`
+	ActionStatuses []ActionStatus     `json:"actionStatus,omitempty"`
+	ActionStatSer  string             `json:"actionStatSer,omitempty"`
 }
 
 type ActionStatus struct {

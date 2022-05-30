@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
 	"strings"
 	"time"
@@ -265,7 +266,11 @@ func (r *WorkflowReconciler) UpdateWorkflowStatus(ctx context.Context, workflowM
 		}
 	}
 	workflowManifest.Status.Conditions = conditions
-	err := r.Status().Update(ctx, workflowManifest)
+	actionStatSer, err := json.Marshal(workflowManifest.Status.ActionStatuses)
+	if err == nil {
+		workflowManifest.Status.ActionStatSer = string(actionStatSer)
+	}
+	err = r.Status().Update(ctx, workflowManifest)
 	if err != nil {
 		logger.Error(err, "Failed to update Workflow status")
 		//return ctrl.Result{}, err
@@ -290,9 +295,13 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 	if found {
 		actionStatus = workflowManifest.Status.ActionStatuses[idx]
 	} else { // new or incremental update
+		namespace := workflowManifest.Namespace
+		if namespace == "default" {
+			namespace = "guest"
+		}
 		actionStatus = wp5v1alpha1.ActionStatus{
 			Name:       action.Name,
-			Namespace:  workflowManifest.Namespace + "/" + workflowManifest.Name,
+			Namespace:  namespace + "/" + workflowManifest.Name,
 			Id:         action.Id,
 			Version:    action.Version,
 			Runtime:    action.Runtime,
@@ -334,7 +343,7 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 func setBackendURL(actionStatus *wp5v1alpha1.ActionStatus, cluster string, apiID string) string {
 	var result string
 	var PHYSICS_BACKENDURL_PATTERN string = lookupEnv("PHYSICS_BACKENDURL_PATTERN",
-		"http://@REMOTE-CLUSTER--sub-ow.openwhisk.svc.clusterset.local/api/@API-ID/@PACKAGE/@ACTION")
+		"http://@REMOTE-CLUSTER-sub-ow.openwhisk.svc.clusterset.local/api/@API-ID/@PACKAGE/@ACTION")
 	//var PHYSICS_APIGATEWAY_BASEURL string = lookupEnv("PHYSICS_APIGATEWAY_BASEURL",
 	//		"http://" + cluster + "-sub-ow.openwhisk.svc.clusterset.local:8080/api/")
 	namespace := strings.Split(actionStatus.Namespace, "/")[0] // "namespace/package"

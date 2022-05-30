@@ -164,6 +164,8 @@ spec:
           status:
             description: WorkflowStatus defines the observed state of Workflow
             properties:
+              actionStatSer:
+                type: string
               actionStatus:
                 items:
                   properties:
@@ -270,9 +272,6 @@ spec:
                   - type
                   type: object
                 type: array
-            required:
-            - actionStatus
-            - conditions
             type: object
         type: object
     served: true

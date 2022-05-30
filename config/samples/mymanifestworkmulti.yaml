@@ -1,0 +1,100 @@
+apiVersion: work.open-cluster-management.io/v1
+kind: ManifestWork
+metadata:
+  namespace: cluster1
+  name: hello-work-sequence
+spec:
+  workload:
+    manifests:
+      - apiVersion: wp5.physics-faas.eu/v1alpha1
+        kind: Workflow
+        metadata:
+          name: hello-sequence
+          namespace: default
+          #namespace: physics-atos
+          annotations:
+            id: "19fe4293742e0b2c"
+            version: "1"
+            cluster: cluster1
+        spec:
+          execution: NativeSequence
+          listOfActions:
+            - id: 339d2ef8b0b29795
+            - id: 3a807141f16764a5
+          native: true
+          platform: openWhisk
+          type: flow
+          actions:
+          - name: hello
+            description: "hello"
+            id: 339d2ef8b0b29795
+            version: 1.0.0
+            runtime: nodejs
+            annotations:
+              cluster: cluster1
+            code: "function main(msg) {\nmsg.payload=msg.payload+' hello';\nreturn msg;}"
+            functionInput:
+              payload:
+                default: ""
+                description: "payload parameter"
+                type: string
+                value: ""
+                #name: "payload"        
+            resources:
+              limits:
+                memory: 128
+              requests:
+                cpu: 1
+                memory: 128
+            extraResources:
+              gpu: true
+              diskType: ssd
+            semantics:
+              cpu: medium
+              memory: low
+              network: spikes
+          - name: world
+            description: "world"
+            version: 1.0.0
+            id: 3a807141f16764a5
+            runtime: nodejs
+            #runtime: blackbox
+            #image: "action-proxy" # remote action
+            annotations:
+              cluster: cluster2
+            code: |
+              function main(msg) {
+              //implies affinity with the other function in the sequence
+              msg.payload=msg.payload+' world';
+              return msg;
+              }
+            functionInput:
+              payload:
+                default: ""
+                description: "payload parameter"
+                type: string
+                value: ""
+                name: "payload"
+            resources:
+              limits:
+                memory: 256
+            extraResources:
+              gpu: false
+  manifestConfigs:
+    - resourceIdentifier:
+        group: wp5.physics-faas.eu
+        resource: workflows
+        namespace: default
+        name: hello-sequence
+      feedbackRules:
+        #- type: WellKnownStatus
+        - type: JSONPaths
+          jsonPaths:
+            - name: isApplied
+              path: '.status.conditions[?(@.type=="Applied")].status'          
+            - name: isAvailable
+              path: '.status.conditions[?(@.type=="Available")].status'
+            - name: actionStatus
+              path: '.status.actionStatSer'              
+            #- name: actionStatus
+            #  path: '.status.actionStatus[*].backendURL'

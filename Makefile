@@ -157,7 +157,7 @@ MYIP = $(shell ./myip.sh)
 deploykind: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	#docker exec -it $(KIND_CLUSTER)-control-plane crictl rmi docker.io/library/$(IMG)
-	#docker exec -it $(KIND_CLUSTER)-control-plane crictl rmi $(IMG)
+	docker exec -it $(KIND_CLUSTER)-control-plane crictl rmi $(IMG)
 	kind load docker-image $(IMG) --name $(KIND_CLUSTER)
 	cd config/localdev && sed -i 's/localhost/$(MYIP)/g' ./manager_env_patch.yaml
 	$(KUSTOMIZE) build config/localdev | kubectl apply --context=kind-$(KIND_CLUSTER) -f -
