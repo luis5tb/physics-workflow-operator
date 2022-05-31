@@ -343,7 +343,8 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 func setBackendURL(actionStatus *wp5v1alpha1.ActionStatus, cluster string, apiID string) string {
 	var result string
 	var PHYSICS_BACKENDURL_PATTERN string = lookupEnv("PHYSICS_BACKENDURL_PATTERN",
-		"http://@REMOTE-CLUSTER-sub-ow.openwhisk.svc.clusterset.local/api/@API-ID/@PACKAGE/@ACTION")
+		"http://@REMOTE-CLUSTER-sub-ow.openwhisk.svc.clusterset.local/api/v1/web/@NAMESPACE/@PACKAGE/@ACTION.json") // OW Web url through by submariner (.json)
+	//	"http://@REMOTE-CLUSTER-sub-ow.openwhisk.svc.clusterset.local/api/@API-ID/@PACKAGE/@ACTION")		// OW API Gateway url through submariner
 	//var PHYSICS_APIGATEWAY_BASEURL string = lookupEnv("PHYSICS_APIGATEWAY_BASEURL",
 	//		"http://" + cluster + "-sub-ow.openwhisk.svc.clusterset.local:8080/api/")
 	namespace := strings.Split(actionStatus.Namespace, "/")[0] // "namespace/package"

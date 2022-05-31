@@ -13,7 +13,7 @@ kubectl delete -f config/samples/mymanifestworkmulti.yaml --context $HUB_CTX
 #wsk --apihost http://$MYIP:3233 --auth $OW_AUTH action delete /$OW_NAMESPACE/$WORKFLOW_NAME/hello
 #wsk --apihost http://$MYIP:3233 --auth $OW_AUTH action delete /$OW_NAMESPACE/$WORKFLOW_NAME/world
 #wsk --apihost http://$MYIP:3233 --auth $OW_AUTH package delete /$OW_NAMESPACE/$WORKFLOW_NAME 
-#wsk --apihost http://$MYIP:3233 --auth $OW_AUTH api delete /$WORKFLOW_NAME 
+wsk --apihost http://$MYIP:3233 --auth $OW_AUTH api delete /$WORKFLOW_NAME 
 sleep 3
 kubectl -n $NAMESPACE get workflow --context $MANAGED_CTX
 wsk --apihost http://$MYIP:3233 --auth $OW_AUTH list
