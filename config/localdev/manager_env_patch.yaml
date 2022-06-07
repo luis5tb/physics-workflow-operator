@@ -15,4 +15,10 @@ spec:
             value: "http://localhost:30198"
           - name: PHYSICS_OW_PROXY_IPP
             value: IfNotPresent  
+          - name: PHYSICS_ACTION_PROXY_IMAGE  
+            #value: "action-proxy:v1"
+            value: "registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1"
+          #- name: PHYSICS_BACKENDURL_PATTERN
+          #  value: "http://@REMOTE-CLUSTER-sub-ow.openwhisk.svc.clusterset.local/api/v1/web/@NAMESPACE/@PACKAGE/@ACTION.json"
+          #  value: "https://openwhisk.apps.ocphub.physics-faas.eu/api/v1/web/@NAMESPACE/@PACKAGE/@ACTION.json"
                    

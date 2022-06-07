@@ -151,7 +151,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 
-KIND_CLUSTER = physics
+KIND_CLUSTER ?= physics
 MYIP = $(shell ./myip.sh)
 .PHONY: deploykind
 deploykind: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.

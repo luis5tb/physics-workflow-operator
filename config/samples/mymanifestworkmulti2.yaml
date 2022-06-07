@@ -1,21 +1,25 @@
 apiVersion: work.open-cluster-management.io/v1
 kind: ManifestWork
 metadata:
-  namespace: cluster1
-  name: hello-work-sequence
+  #namespace: cluster1
+  #namespace: okdhub-cluster
+  namespace: atos-edge
+  name: hello-work-sequence-atos
 spec:
   workload:
     manifests:
       - apiVersion: wp5.physics-faas.eu/v1alpha1
         kind: Workflow
         metadata:
-          name: hello-sequence
+          name: hello-sequence-atos
           namespace: default
           #namespace: physics-atos
           annotations:
             id: "19fe4293742e0b2c"
             version: "1"
-            cluster: cluster1
+            #cluster: cluster1
+            #cluster: okdhub-cluster
+            cluster: atos-edge
         spec:
           execution: NativeSequence
           listOfActions:
@@ -31,7 +35,9 @@ spec:
             version: 1.0.0
             runtime: nodejs
             annotations:
-              cluster: cluster1
+              #cluster: cluster1
+              #cluster: okdhub-cluster
+              cluster: atos-edge
             code: "function main(msg) {\nmsg.payload=msg.payload+' hello';\nreturn msg;}"
             functionInput:
               payload:
@@ -61,7 +67,9 @@ spec:
             #runtime: blackbox
             #image: "action-proxy" # remote action
             annotations:
-              cluster: cluster2
+              #cluster: cluster1
+              cluster: okdhub-cluster
+              #cluster: atos-edge
             code: |
               function main(msg) {
               //implies affinity with the other function in the sequence
@@ -78,7 +86,8 @@ spec:
               backendURL:
                 #value: "http://cluster2-sub-ow.openwhisk.svc.clusterset.local/api/23bc46b1-71f6-4ed5-8c54-816aa4f8c502/hello-sequence/world"  
                 #value: "http://172.24.70.26:3234/api/23bc46b1-71f6-4ed5-8c54-816aa4f8c502/hello-sequence/world"
-                value: "http://172.24.66.243:3233/api/v1/web/guest/default/cluster2-world.json"
+                #value: "http://172.24.66.243:3233/api/v1/web/guest/default/cluster2-world.json"
+                value: "https://openwhisk.apps.ocphub.physics-faas.eu/api/v1/web/physics-atos/hello-sequence-atos/world.json"
             resources:
               limits:
                 memory: 256
@@ -89,7 +98,10 @@ spec:
         group: wp5.physics-faas.eu
         resource: workflows
         namespace: default
-        name: hello-sequence
+        #namespace: physics-atos
+        name: hello-sequence-atos
+        #version: v1alpha1
+        #kind: Workflow
       feedbackRules:
         #- type: WellKnownStatus
         - type: JSONPaths
