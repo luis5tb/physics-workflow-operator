@@ -3,7 +3,8 @@ kind: ManifestWork
 metadata:
   #namespace: cluster1
   #namespace: okdhub-cluster
-  namespace: atos-edge
+  #namespace: atos-edge
+  namespace: azure2
   name: hello-work-sequence-atos
 spec:
   workload:
@@ -19,7 +20,8 @@ spec:
             version: "1"
             #cluster: cluster1
             #cluster: okdhub-cluster
-            cluster: atos-edge
+            #cluster: atos-edge
+            cluster: azure2
         spec:
           execution: NativeSequence
           listOfActions:
@@ -37,7 +39,8 @@ spec:
             annotations:
               #cluster: cluster1
               #cluster: okdhub-cluster
-              cluster: atos-edge
+              #cluster: atos-edge
+              cluster: azure2
             code: "function main(msg) {\nmsg.payload=msg.payload+' hello';\nreturn msg;}"
             functionInput:
               payload:
@@ -68,8 +71,9 @@ spec:
             #image: "action-proxy" # remote action
             annotations:
               #cluster: cluster1
-              cluster: okdhub-cluster
-              #cluster: atos-edge
+              #cluster: okdhub-cluster
+              cluster: atos-edge
+              #cluster: azure2
             code: |
               function main(msg) {
               //implies affinity with the other function in the sequence

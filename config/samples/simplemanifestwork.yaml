@@ -2,9 +2,9 @@ apiVersion: work.open-cluster-management.io/v1
 kind: ManifestWork
 metadata:
   #namespace: okdmoc-spoke-cluster
-  #namespace: okdhub-cluster
+  namespace: okdhub-cluster
   #namespace: cluster1
-  namespace: atos-edge
+  #namespace: atos-edge
   name: example-manifestwork
 spec:
   workload:
@@ -17,8 +17,8 @@ spec:
       - apiVersion: apps/v1
         kind: Deployment
         metadata:
-          namespace: physics-atos
-          #namespace: default
+          #namespace: physics-atos
+          namespace: default
           name: nginx-deployment
           labels:
             app: nginx
@@ -44,8 +44,8 @@ spec:
         group: apps
         #kind: Deployment
         name: nginx-deployment
-        namespace: physics-atos
-        #namespace: default
+        #namespace: physics-atos
+        namespace: default
         resource: deployments
         #version: v1
       feedbackRules:

@@ -7,12 +7,14 @@ spec:
   template:
     spec:
       imagePullSecrets:
-        - name: regcred    
+      #  - name: regcred    
+         - name: physics-harbor-pullsecret
       containers:
       - name: manager
         env:
           - name: PHYSICS_OW_PROXY_ENDPOINT
-            value: "http://physics-ow-proxy.physics-atos"
+            #value: "http://physics-ow-proxy.physics-atos"
+            value: "http://physics-ow-proxy.physics"
           - name: PHYSICS_OW_ENDPOINT
             value: "http://owdev-nginx.openwhisk"
           - name: PHYSICS_ACTION_PROXY_IMAGE  

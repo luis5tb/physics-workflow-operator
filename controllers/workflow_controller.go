@@ -292,13 +292,21 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 			idx = k
 		}
 	}
-	if found {
+	namespace := workflowManifest.Namespace
+	if namespace == "default" {
+		namespace = "guest"
+	}
+	if found { // check for updates like version
 		actionStatus = workflowManifest.Status.ActionStatuses[idx]
+		actionStatus.Name = action.Name
+		actionStatus.Namespace = namespace + "/" + workflowManifest.Name
+		actionStatus.Version = action.Version
+		actionStatus.Runtime = action.Runtime
+		actionStatus.State = "Unknown"
+		actionStatus.Message = ""
+		actionStatus.BackendURL = ""
+		//actionStatus.Remote = "false"
 	} else { // new or incremental update
-		namespace := workflowManifest.Namespace
-		if namespace == "default" {
-			namespace = "guest"
-		}
 		actionStatus = wp5v1alpha1.ActionStatus{
 			Name:       action.Name,
 			Namespace:  namespace + "/" + workflowManifest.Name,
@@ -322,6 +330,7 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 		actionStatus.Message = ""
 		if _, ok := action.Annotations["remote"]; ok { // Remote function
 			actionStatus.Remote = "true"
+			actionStatus.BackendURL = "" // For action updates to remote
 			//if action.Runtime == "blackbox" && action.Image == PHYSICS_ACTION_PROXY_IMAGE { // Remote function
 			if input, ok := action.FunctionInput[PHYSICS_ACTION_PROXY_PARAM]; ok {
 				if len(input.Value) > 0 {
