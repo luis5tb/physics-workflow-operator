@@ -72,8 +72,8 @@ spec:
             annotations:
               #cluster: cluster1
               #cluster: okdhub-cluster
-              cluster: atos-edge
-              #cluster: azure2
+              #cluster: atos-edge
+              cluster: azure2
             code: |
               function main(msg) {
               //implies affinity with the other function in the sequence

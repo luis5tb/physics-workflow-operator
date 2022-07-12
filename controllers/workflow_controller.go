@@ -305,7 +305,7 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 		actionStatus.State = "Unknown"
 		actionStatus.Message = ""
 		actionStatus.BackendURL = ""
-		//actionStatus.Remote = "false"
+		actionStatus.Remote = ""
 	} else { // new or incremental update
 		actionStatus = wp5v1alpha1.ActionStatus{
 			Name:       action.Name,
@@ -316,7 +316,7 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 			State:      "Unknown",
 			Message:    "",
 			BackendURL: "",
-			//Remote:     "false",
+			Remote:     "",
 		}
 		workflowManifest.Status.ActionStatuses = append(workflowManifest.Status.ActionStatuses, actionStatus)
 		idx = len(workflowManifest.Status.ActionStatuses) - 1
