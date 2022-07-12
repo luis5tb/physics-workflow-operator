@@ -16,7 +16,6 @@ OW_NAMESPACE=guest
 MANAGED_CLUSTER=atos-edge
 #MANAGED_CLUSTER=okdhub-cluster
 OW_AUTH=23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP
-#OW_AUTH=87147e36-6796-4c64-a63c-b0d583c97cdb:niQbeW7o7HWwfKcK76ePzNEd0iZdz6yBi6f92neGROJzPukQpmc0QxAVW03TGrZ1
 echo '*** INIT all...'
 kubectl delete -f config/samples/mymanifestworkmulti.yaml --context $HUB_CTX
 #wsk --apihost $OW_APIHOST --auth $OW_AUTH action delete /$OW_NAMESPACE/$WORKFLOW_NAME/$WORKFLOW_NAME
