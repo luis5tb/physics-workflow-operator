@@ -1,0 +1,313 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "wp5.physics-faas.eu/v1alpha1",
+          "kind": "Workflow",
+          "metadata": {
+            "annotations": {
+              "id": "flow:19fe4293742e0b2c",
+              "version": "1"
+            },
+            "name": "hello-sequence",
+            "namespace": "default"
+          },
+          "spec": {
+            "actions": [
+              {
+                "code": "function main(msg) {\nmsg.payload=msg.payload+' hello';\nreturn msg;}",
+                "description": "hello",
+                "extraResources": {
+                  "diskType": "ssd",
+                  "gpu": true
+                },
+                "functionInput": {
+                  "payload": {
+                    "default": "",
+                    "description": "payload parameter",
+                    "type": "string",
+                    "value": ""
+                  }
+                },
+                "id": "339d2ef8b0b29795",
+                "name": "hello",
+                "resources": {
+                  "limits": {
+                    "memory": 128
+                  },
+                  "requests": {
+                    "cpu": 1,
+                    "memory": 128
+                  }
+                },
+                "runtime": "nodejs",
+                "semantics": {
+                  "cpu": "medium",
+                  "memory": "low",
+                  "network": "spikes"
+                },
+                "version": "1.0.0"
+              },
+              {
+                "code": "function main(msg) {\n//implies affinity with the other function in the sequence\nmsg.payload=msg.payload+' world';\nreturn msg;\n}\n",
+                "description": "world",
+                "extraResources": {
+                  "gpu": false
+                },
+                "functionInput": {
+                  "payload": {
+                    "default": "",
+                    "description": "payload parameter",
+                    "name": "payload",
+                    "type": "string",
+                    "value": ""
+                  }
+                },
+                "id": "3a807141f16764a5",
+                "name": "world",
+                "resources": {
+                  "limits": {
+                    "memory": 256
+                  }
+                },
+                "runtime": "nodejs",
+                "version": "1.0.0"
+              }
+            ],
+            "execution": "NativeSequence",
+            "listOfActions": [
+              {
+                "id": "339d2ef8b0b29795"
+              },
+              {
+                "id": "3a807141f16764a5"
+              }
+            ],
+            "native": true,
+            "platform": "openWhisk",
+            "type": "flow:19fe4293742e0b2c"
+          }
+        }
+      ]
+    capabilities: Basic Install
+    operators.operatorframework.io/builder: operator-sdk-v1.23.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+  name: physics-workflow-operator.v0.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Workflow is the Schema for the workflows API
+      displayName: Workflow
+      kind: Workflow
+      name: workflows.wp5.physics-faas.eu
+      version: v1alpha1
+  description: physics-workflow-operator
+  displayName: physics-workflow-operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - services
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - wp5.physics-faas.eu
+          resources:
+          - workflows
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - wp5.physics-faas.eu
+          resources:
+          - workflows/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - wp5.physics-faas.eu
+          resources:
+          - workflows/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: physics-workflow-operator-controller-manager
+      deployments:
+      - label:
+          control-plane: controller-manager
+        name: physics-workflow-operator-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/default-container: manager
+              labels:
+                control-plane: controller-manager
+            spec:
+              containers:
+              - args:
+                - --secure-listen-address=0.0.0.0:8443
+                - --upstream=http://127.0.0.1:8080/
+                - --logtostderr=true
+                - --v=10
+                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+                name: kube-rbac-proxy
+                ports:
+                - containerPort: 8443
+                  name: https
+                  protocol: TCP
+                resources: {}
+              - args:
+                - --health-probe-bind-address=:8081
+                - --metrics-bind-address=127.0.0.1:8080
+                - --leader-elect
+                command:
+                - /manager
+                env:
+                - name: PHYSICS_OW_PROXY_ENDPOINT
+                  value: http://physics-ow-proxy.physics
+                - name: PHYSICS_OW_ENDPOINT
+                  value: http://owdev-nginx.openwhisk
+                - name: PHYSICS_ACTION_PROXY_IMAGE
+                  value: registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1
+                image: registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator:v0.0.1
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 10m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+              imagePullSecrets:
+              - name: physics-harbor-pullsecret
+              securityContext:
+                runAsNonRoot: true
+              serviceAccountName: physics-workflow-operator-controller-manager
+              terminationGracePeriodSeconds: 10
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: physics-workflow-operator-controller-manager
+    strategy: deployment
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - physics
+  links:
+  - name: Physics Workflow Operator
+    url: https://physics-workflow-operator.domain
+  maturity: alpha
+  provider:
+    name: physics
+  version: 0.0.1
