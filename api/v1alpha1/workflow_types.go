@@ -65,8 +65,8 @@ type Action struct {
 	Resources typesv1.ResourceRequirements `json:"resources,omitempty"`
 	// ExtraResources: Other resources needed by physics, such as cpu or memory
 	ExtraResources ExtraResourcesInfo `json:"extraResources,omitempty"`
-	// Semantics: Information provided by the semantic module
-	Semantics SemanticsInfo `json:"semantics,omitempty"`
+	// PerformanceProfile: Information provided by the Performance Profiler module
+	PerformanceProfile PerformanceProfileInfo `json:"performanceProfile,omitempty"`
 }
 
 type Payload struct {
@@ -81,10 +81,13 @@ type ExtraResourcesInfo struct {
 	DiskType string `json:"diskType,omitempty"`
 }
 
-type SemanticsInfo struct {
-	Cpu     string `json:"cpu,omitempty"`
-	Memory  string `json:"memory,omitempty"`
-	Network string `json:"network,omitempty"`
+type PerformanceProfileInfo struct {
+	Cpu                string `json:"cpu,omitempty"`
+	Memory             string `json:"memory,omitempty"`
+	FsReads            string `json:"fsReads,omitempty"`
+	FsWrites           string `json:"fsWrites,omitempty"`
+	NetworkReceived    string `json:"networkReceived,omitempty"`
+	NetworkTransmitted string `json:"networkTransmitted,omitempty"`
 }
 
 // WorkflowStatus defines the observed state of Workflow
