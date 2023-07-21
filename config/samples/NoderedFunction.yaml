@@ -39,7 +39,7 @@ spec:
     extraResources:
       gpu: true
       diskType: ssd
-    semantics:
+    performanceProfile:
       cpu: medium
       memory: low
-      network: spikes
+      networkTransmitted: low

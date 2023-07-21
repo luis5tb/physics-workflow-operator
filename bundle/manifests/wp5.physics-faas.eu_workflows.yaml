@@ -82,6 +82,23 @@ spec:
                       type: string
                     name:
                       type: string
+                    performanceProfile:
+                      description: 'PerformanceProfile: Information provided by the
+                        Performance Profiler module'
+                      properties:
+                        cpu:
+                          type: string
+                        fsReads:
+                          type: string
+                        fsWrites:
+                          type: string
+                        memory:
+                          type: string
+                        networkReceived:
+                          type: string
+                        networkTransmitted:
+                          type: string
+                      type: object
                     resources:
                       description: 'Same resources as the core k8s for containers:
                         https://github.com/kubernetes/api/blob/master/core/v1/types.go
@@ -115,17 +132,6 @@ spec:
                       description: 'Runtime is the function runtime: NodeJS, Python,
                         ...'
                       type: string
-                    semantics:
-                      description: 'Semantics: Information provided by the semantic
-                        module'
-                      properties:
-                        cpu:
-                          type: string
-                        memory:
-                          type: string
-                        network:
-                          type: string
-                      type: object
                     version:
                       type: string
                   required:

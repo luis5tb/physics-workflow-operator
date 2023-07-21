@@ -47,10 +47,13 @@ spec:
             extraResources:
               gpu: true
               diskType: ssd
-            semantics:
+            performanceProfile:
               cpu: medium
               memory: low
-              network: spikes
+              fsRead: medium
+              fsWrite: high
+              networkTransmitted: low
+              networkReceived: high
           - name: world
             description: "world"
             version: 1.0.0

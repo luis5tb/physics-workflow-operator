@@ -44,10 +44,10 @@ metadata:
                   }
                 },
                 "runtime": "nodejs",
-                "semantics": {
+                "performanceProfile": {
                   "cpu": "medium",
                   "memory": "low",
-                  "network": "spikes"
+                  "networkTransmitted": "low"
                 },
                 "version": "1.0.0"
               },

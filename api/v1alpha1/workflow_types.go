@@ -66,8 +66,8 @@ type Action struct {
 	Resources typesv1.ResourceRequirements `json:"resources,omitempty"`
 	// ExtraResources: Other resources needed by physics, such as cpu or memory
 	ExtraResources ExtraResourcesInfo `json:"extraResources,omitempty"`
-	// Semantics: Information provided by the semantic module
-	Semantics SemanticsInfo `json:"semantics,omitempty"`
+	// PerformanceProfile: Information provided by the Performance Profiler module
+	PerformanceProfile PerformanceProfileInfo `json:"performanceProfile,omitempty"`
 }
 
 // Input params per function
@@ -88,10 +88,13 @@ type ExtraResourcesInfo struct {
 	DiskType string `json:"diskType,omitempty"`
 }
 
-type SemanticsInfo struct {
-	Cpu     string `json:"cpu,omitempty"`
-	Memory  string `json:"memory,omitempty"`
-	Network string `json:"network,omitempty"`
+type PerformanceProfileInfo struct {
+	Cpu                string `json:"cpu,omitempty"`
+	Memory             string `json:"memory,omitempty"`
+	FsReads            string `json:"fsReads,omitempty"`
+	FsWrites           string `json:"fsWrites,omitempty"`
+	NetworkReceived    string `json:"networkReceived,omitempty"`
+	NetworkTransmitted string `json:"networkTransmitted,omitempty"`
 }
 
 // WorkflowStatus defines the observed state of Workflow
@@ -118,8 +121,8 @@ type ActionStatus struct {
 }
 
 // Workflow is the Schema for the workflows API
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
