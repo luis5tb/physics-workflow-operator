@@ -82,6 +82,19 @@ spec:
                       type: string
                     name:
                       type: string
+                    # default parameters for actions
+                    defaultParams:
+                      description: 'default parameters for actions'
+                      items:
+                        properties: 
+                          name:
+                            description: 'parameter name'
+                            type: string
+                          value:
+                            description: 'parameter value'
+                            type: string
+                        type: object
+                      type: array
                     performanceProfile:
                       description: 'PerformanceProfile: Information provided by the
                         Performance Profiler module'
@@ -191,6 +204,17 @@ spec:
                     state:
                       type: string
                     version:
+                      type: string
+                    # NEW
+                    actionHost:
+                      type: string
+                    actionNamespace:
+                      type: string
+                    actionCredentials:
+                      type: string
+                    actionParam1:
+                      type: string
+                    actionParam2:
                       type: string
                   required:
                   - backendURL

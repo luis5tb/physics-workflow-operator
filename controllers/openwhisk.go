@@ -1,10 +1,11 @@
-//
 // Copyright 2021 Atos
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//     https://www.apache.org/licenses/LICENSE-2.0
+//
+//	https://www.apache.org/licenses/LICENSE-2.0
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +16,6 @@
 // Updated on 23 Mar 2022
 //
 // @author: ATOS
-//
 package controllers
 
 import (
@@ -30,13 +30,15 @@ import (
 
 	"github.com/go-logr/logr"
 	wp5v1alpha1 "gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/api/v1alpha1"
+
+	log "gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/common/logs"
 )
 
 var OW_API_FUNC_PATH string = "/api/v1/function"
 var OW_API_PACK_PATH string = "/api/v1/package"
 
-//var OW_API_HOST string = "http://localhost:8090"
-//var OW_API_HOST string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
+// var OW_API_HOST string = "http://localhost:8090"
+// var OW_API_HOST string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
 var OW_API_KEY string
 var OW_DEFAULT_NAMESPACE string = "_" // "guest" or "_"
 var OW_DEFAULT_PACKAGE string = ""    // ""
@@ -46,31 +48,42 @@ type FaaSManager struct {
 	Name string
 }
 
+/**
+ *
+ */
 func (fm *FaaSManager) CreateFunction(namespace string, action *wp5v1alpha1.Action) (int, string) {
+	log.Info(pathLOG + "[CreateFunction] >>>>> Call to OW_PROXY to create a new Function ...")
 	statusCode, status := fm.UpdateFunction(namespace, action, true)
 	return statusCode, status
-	//return resp.StatusCode, resp.Status
 }
 
+/**
+ *
+ */
 func (fm *FaaSManager) DeleteFunction(namespace string, name string) (int, string) {
+	log.Info(pathLOG + "[DeleteFunction] >>>>> Call to OW_PROXY")
+
 	var OW_API_HOST string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
 	var baseUrl string = OW_API_HOST + OW_API_FUNC_PATH
 	if len(namespace) == 0 {
 		namespace = OW_DEFAULT_NAMESPACE
 	}
 	url := baseUrl + "/" + name + "?namespace=" + normalizeNamespace(namespace)
-	//req, err := http.NewRequest("DELETE", url, bytes.NewBuffer([]byte(name)))
+
+	log.Trace(pathLOG + "[DeleteFunction] OW-PROXY HOST ... " + OW_API_HOST)
+	log.Trace(pathLOG + "[DeleteFunction] baseUrl ......... " + baseUrl)
+	log.Trace(pathLOG + "[DeleteFunction] namespace ....... " + namespace)
+	log.Debug(pathLOG + "[DeleteFunction] url ............. " + url)
+
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		// handle error
-		//panic(err)
 		return http.StatusInternalServerError, err.Error()
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		// handle error
-		//panic(err)
 		if resp == nil {
 			return http.StatusInternalServerError, err.Error()
 		}
@@ -79,39 +92,59 @@ func (fm *FaaSManager) DeleteFunction(namespace string, name string) (int, strin
 	return resp.StatusCode, resp.Status
 }
 
+/**
+ *
+ */
 func (fm *FaaSManager) ReadFunction(namespace string, name string) (int, string) {
+	log.Info(pathLOG + "[ReadFunction] >>>>> Call to OW_PROXY")
+
 	var OW_API_HOST string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
 	var baseUrl string = OW_API_HOST + OW_API_FUNC_PATH
 	if len(namespace) == 0 {
 		namespace = OW_DEFAULT_NAMESPACE
 	}
 	url := baseUrl + "/" + name + "?namespace=" + normalizeNamespace(namespace)
+
+	log.Trace(pathLOG + "[ReadFunction] OW-PROXY HOST ... " + OW_API_HOST)
+	log.Trace(pathLOG + "[ReadFunction] baseUrl ......... " + baseUrl)
+	log.Trace(pathLOG + "[ReadFunction] namespace ....... " + namespace)
+	log.Debug(pathLOG + "[ReadFunction] url ............. " + url)
+
 	resp, err := http.Get(url)
 	if err != nil {
 		// handle error
-		//panic(err)
 		if resp == nil {
 			return http.StatusInternalServerError, err.Error()
 		}
 		return resp.StatusCode, resp.Status
 	}
 	defer resp.Body.Close()
-	//body, err := io.ReadAll(resp.Body)
+
 	if err != nil {
-		//panic(err)
 		return http.StatusInternalServerError, err.Error()
 	}
-	//fmt.Println(string(body))
+
 	return resp.StatusCode, resp.Status
 }
 
+/**
+ *
+ */
 func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Action, isNew bool) (int, string) {
+	log.Info(pathLOG + "[UpdateFunction] >>>>> Call to OW_PROXY to update a Function ...")
+
 	var OW_API_HOST string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
 	var baseUrl string = OW_API_HOST + OW_API_FUNC_PATH
 	var jsonStr []byte
 	if len(namespace) == 0 {
 		namespace = OW_DEFAULT_NAMESPACE
 	}
+
+	log.Trace(pathLOG + "[UpdateFunction] OW-PROXY settings: ")
+	log.Trace(pathLOG + "[UpdateFunction] 	- OW-PROXY HOST ... " + OW_API_HOST)
+	log.Trace(pathLOG + "[UpdateFunction] 	- baseUrl ......... " + baseUrl)
+	log.Trace(pathLOG + "[UpdateFunction] 	- namespace ....... " + namespace)
+
 	//type Annotations
 	params := struct {
 		Name        string `json:"name"`
@@ -146,21 +179,52 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Acti
 		"", action.Image, false, true, false, // Action Web interface by default
 		nil, nil, nil, nil,
 	}
-	if len(action.FunctionInput) > 0 {
+
+	// action parameters <<<==== se elimina
+	/*
+		if len(action.FunctionInput) > 0 {
+			params.Inputs = make([]struct {
+				Name  string `json:"name,omitempty"`
+				Type  string `json:"type,omitempty"`
+				Value string `json:"value,omitempty"`
+			}, 0)
+			for name, value := range action.FunctionInput {
+				input := struct {
+					Name  string `json:"name,omitempty"`
+					Type  string `json:"type,omitempty"`
+					Value string `json:"value,omitempty"`
+				}{name, value.Type, value.Value}
+				params.Inputs = append(params.Inputs, input)
+			}
+		}
+	*/
+
+	// default parameters <<<<==== creacion
+	if len(action.DefaultParams) > 0 {
+		log.Debug(pathLOG + "[CreateFunction] Using default parameters defined in action workflow ...")
+
 		params.Inputs = make([]struct {
 			Name  string `json:"name,omitempty"`
 			Type  string `json:"type,omitempty"`
 			Value string `json:"value,omitempty"`
 		}, 0)
-		for name, value := range action.FunctionInput {
+
+		for _, elem := range action.DefaultParams {
+			log.Debug(pathLOG + "[CreateFunction] 	Param: " + elem.Name + "=" + elem.Value)
+
 			input := struct {
 				Name  string `json:"name,omitempty"`
 				Type  string `json:"type,omitempty"`
 				Value string `json:"value,omitempty"`
-			}{name, value.Type, value.Value}
+			}{elem.Name, "string", elem.Value}
 			params.Inputs = append(params.Inputs, input)
 		}
+
+	} else {
+		log.Debug(pathLOG + "[CreateFunction] No default parameters defined in action workflow.")
 	}
+
+	// Annotations
 	if len(action.Annotations) > 0 {
 		params.Annotations = make([]struct {
 			Key   string `json:"key,omitempty"`
@@ -174,7 +238,8 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Acti
 			params.Annotations = append(params.Annotations, annotation)
 		}
 	}
-	//if len(action.Limits) > 0 {
+
+	// Resources.Limits
 	if len(action.Resources.Limits) > 0 {
 		params.Limits = make(map[string]int)
 		if _, ok := action.Resources.Limits["memory"]; ok { // OW memory limit in MB <-> K8S memory limit in bytes (string)
@@ -195,34 +260,19 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Acti
 				params.Limits["logs"] = int(valors.Value()) //  / 1024 / 1024)
 			}
 		}
-		/*
-			if _, ok := action.Limits["memorySize"]; ok {
-				params.Limits["memory"] = action.Limits["memorySize"]
-			}
-			if _, ok := action.Limits["timeout"]; ok {
-				params.Limits["timeout"] = action.Limits["timeout"]
-			}
-			if _, ok := action.Limits["logsSize"]; ok {
-				params.Limits["logs"] = action.Limits["logsSize"]
-			}
-			if _, ok := action.Limits["concurrency"]; ok {
-				params.Limits["concurrency"] = action.Limits["concurrency"]
-			}
-		*/
 	}
+
 	if action.Runtime == "sequence" {
-		//params.Sequence = make([]string,0)
 		params.Sequence = strings.Split(action.Code, ",")
 		params.Code = ""
 	}
 	params.Namespace = normalizeNamespace(namespace) // namespace/package
 	jsonStr, err := json.Marshal(params)
 	if err != nil {
-		//panic(err)
 		return http.StatusInternalServerError, err.Error()
 	}
+
 	// Check if package exists
-	//fmt.Println(params)
 	method := "PUT"
 	url := baseUrl
 	if isNew { // Create
@@ -231,19 +281,19 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Acti
 		method = "PUT"
 		url = baseUrl + "/" + action.Name
 	}
+
+	log.Info(pathLOG + "[UpdateFunction] Calling OW-PROXY [" + method + " " + url + "] ...")
+
 	fmt.Println(method, url, string(jsonStr), params)
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		// handle error
-		//panic(err)
 		return http.StatusInternalServerError, err.Error()
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	//resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		// handle error
-		//panic(err)
 		if resp == nil {
 			return http.StatusInternalServerError, err.Error()
 		}
@@ -252,17 +302,20 @@ func (fm *FaaSManager) UpdateFunction(namespace string, action *wp5v1alpha1.Acti
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		//panic(err)
 		return http.StatusInternalServerError, err.Error()
 	} else {
 		setActionApiID(action, &body)
 	}
-	//fmt.Println(string(body))
+
 	return resp.StatusCode, resp.Status
 }
 
+/**
+ *
+ */
 func setActionApiID(action *wp5v1alpha1.Action, body *[]byte) {
-	//fmt.Println("DEBUG:", string(body))
+	log.Info(pathLOG + "[setActionApiID] ...")
+
 	var wiredAction map[string]interface{}
 	err := json.Unmarshal(*body, &wiredAction)
 	//fmt.Println("DEBUG:", err)
@@ -290,31 +343,30 @@ func setActionApiID(action *wp5v1alpha1.Action, body *[]byte) {
 	}
 }
 
-/*
-Ref: https://github.com/apache/openwhisk/blob/master/docs/reference.md#fully-qualified-names
-The fully qualified name of an entity is /namespaceName[/packageName]/entityName. Notice that / is used to
-delimit namespaces, packages, and entities.
-
-If the fully qualified name has three parts: /namespaceName/packageName/entityName, then the namespace can be
-entered without a prefixed /; otherwise, namespaces must be prefixed with a /.
-
-For convenience, the namespace can be left off if it is the user's default namespace.
-
-namespace					1	Not valid => package name?
-package						1	Default namespace
-/							2	Default namespace + no packages
-/namespace					2	No packages
-/package					2	Not valid => namespace?
-namespace/					2
-package/					2	Not valid	=> namespace + no packages?
-namespace/package			2
-/namespace/package			3
-namespace/package/			3
-/namespace/					3	No packages
-/package/					3	Not valid	=> namespace + no packages?
-/namespace/package/			4
-
-*/
+/**
+ * Ref: https://github.com/apache/openwhisk/blob/master/docs/reference.md#fully-qualified-names
+ * The fully qualified name of an entity is /namespaceName[/packageName]/entityName. Notice that / is used to
+ * delimit namespaces, packages, and entities.
+ *
+ * If the fully qualified name has three parts: /namespaceName/packageName/entityName, then the namespace can be
+ * entered without a prefixed /; otherwise, namespaces must be prefixed with a /.
+ *
+ * For convenience, the namespace can be left off if it is the user's default namespace.
+ *
+ * namespace					1	Not valid => package name?
+ * package						1	Default namespace
+ * /							2	Default namespace + no packages
+ * /namespace					2	No packages
+ * /package					2	Not valid => namespace?
+ * namespace/					2
+ * package/					2	Not valid	=> namespace + no packages?
+ * namespace/package			2
+ * /namespace/package			3
+ * namespace/package/			3
+ * /namespace/					3	No packages
+ * /package/					3	Not valid	=> namespace + no packages?
+ * /namespace/package/			4
+ */
 func normalizeNamespace(namespace string) string {
 	var result string
 	var pckg string
@@ -363,24 +415,26 @@ func normalizeNamespace(namespace string) string {
 	return result
 } // normalizeNamespace()
 
+/**
+ *
+ */
 func CleanUpExternalResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
-	//var logger = log.FromContext(ctx)
-	logger.Info("cleanUp()...")
+	log.Info(pathLOG + "[CleanUpExternalResources] cleanUp()...")
+
 	fm := &FaaSManager{
 		Name: "openwhisk",
 	}
 	pkgInfo := struct{ Name string }{workflowManifest.Name}
-	//for pkgName, pkgInfo := range workflowManifest.Spec.Packages {
-	//	pkgInfo.Name = pkgName
-	//for actionName, action := range pkgInfo.Actions {
+
 	for _, action := range workflowManifest.Spec.Actions {
-		//action.Name = actionName
-		logger.Info("Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
+		log.Info(pathLOG + "[CleanUpExternalResources] Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
+
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, action.Name)
-		logger.Info("Read Function: ", "statusCode", statusCode, "status", status)
+		log.Info(pathLOG+"[CleanUpExternalResources] Read Function: ", "statusCode", statusCode, "status", status)
+
 		if statusCode == 200 {
 			statusCode, status = fm.DeleteFunction(namespace+"/"+pkgInfo.Name, action.Name)
-			logger.Info("Delete Function: ", "statusCode", statusCode, "status", status)
+			log.Info(pathLOG+"[CleanUpExternalResources] Delete Function: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
 				return goerrors.New("Delete function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
 			}
@@ -392,42 +446,41 @@ func CleanUpExternalResources(logger logr.Logger, namespace string, workflowMani
 			Annotations wp5v1alpha1.Annotations
 			Actions     string
 		}{workflowManifest.Name, nil, ""}
-		//for sequenceName, sequence := range pkgInfo.Sequences {
-		//sequence.Name = sequenceName
-		logger.Info("Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
+
+		log.Info(pathLOG + "[CleanUpExternalResources] Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-		logger.Info("Read Sequence: ", "statusCode", statusCode, "status", status)
+		log.Info(pathLOG+"[CleanUpExternalResources] Read Sequence: ", "statusCode", statusCode, "status", status)
 		if statusCode == 200 {
 			statusCode, status = fm.DeleteFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-			logger.Info("Delete Sequence: ", "statusCode", statusCode, "status", status)
+			log.Info(pathLOG+"[CleanUpExternalResources] Delete Sequence: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
 				return goerrors.New("Delete Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
 			}
 		}
-	} // if workflowManifest.Spec.Execution == "NativeSequence"
-	//}		// for pkgInfo.Sequences
-	//}		// for workflowManifest.Spec.Packages
-	logger.Info("cleanUp() end.")
+	}
+
+	log.Info(pathLOG + "[CleanUpExternalResources] cleanUp() end.")
 	return nil
 } // CleanUpExternalResources()
 
+/**
+ *
+ */
 func UpdateExternalResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
-	//var logger = log.FromContext(ctx)
-	logger.Info("UpdateExternalResources()...")
+	log.Info(pathLOG + "[UpdateExternalResources] Updating External Resources ...")
+
 	var PHYSICS_ACTION_PROXY_IMAGE string = lookupEnv("PHYSICS_ACTION_PROXY_IMAGE", "action-proxy:v1")
 	fm := &FaaSManager{
 		Name: "openwhisk",
 	}
 	pkgInfo := struct{ Name string }{workflowManifest.Name}
-	//for pkgName, pkgInfo := range workflowManifest.Spec.Packages {
-	//	pkgInfo.Name = pkgName
-	//	for actionName, action := range pkgInfo.Actions {
+
 	for _, action := range workflowManifest.Spec.Actions {
-		//action.Name = actionName
 		if len(action.Annotations) == 0 {
 			action.Annotations = make(wp5v1alpha1.Annotations)
 		}
 		action.Annotations["id"] = action.Id
+
 		//	Setup remote actions
 		if cluster, ok := workflowManifest.Annotations["cluster"]; ok {
 			if target, ok := action.Annotations["cluster"]; ok {
@@ -438,13 +491,14 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 				}
 			}
 		}
-		//
-		logger.Info("Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
+
+		log.Info(pathLOG + "[UpdateExternalResources] Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, action.Name)
-		logger.Info("Read Function: ", "statusCode", statusCode, "status", status)
+		log.Info(pathLOG + "[UpdateExternalResources] Read Function: status: " + status)
+
 		if statusCode == 404 { // Not found => New
 			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, &action)
-			logger.Info("Create Function: ", "statusCode", statusCode, "status", status)
+			log.Info(pathLOG+"[UpdateExternalResources] Create Function: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
 				UpdateActionStatus(workflowManifest, &action, status)
 				return goerrors.New("Create function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
@@ -452,7 +506,7 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 		} else {
 			if statusCode == 200 { // Found => Update
 				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, &action, false)
-				logger.Info("Update Function: ", "statusCode", statusCode, "status", status)
+				log.Info(pathLOG+"[UpdateExternalResources] Update Function: ", "statusCode", statusCode, "status", status)
 				if statusCode != 200 {
 					UpdateActionStatus(workflowManifest, &action, status)
 					return goerrors.New("Update function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
@@ -465,6 +519,7 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 		}
 		UpdateActionStatus(workflowManifest, &action, "")
 	}
+
 	if workflowManifest.Spec.Execution == "NativeSequence" {
 		var actionList string
 		for _, actionId := range workflowManifest.Spec.ListOfActions {
@@ -483,11 +538,10 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 			Actions     string
 		}{workflowManifest.Name, make(wp5v1alpha1.Annotations), actionList}
 		sequence.Annotations["id"] = workflowManifest.Annotations["id"]
-		//for sequenceName, sequence := range pkgInfo.Sequences {
-		//sequence.Name = sequenceName
-		logger.Info("Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
+
+		log.Info(pathLOG + "[UpdateExternalResources] Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-		logger.Info("Read Sequence: ", "statusCode", statusCode, "status", status)
+		log.Info(pathLOG+"[UpdateExternalResources] Read Sequence: ", "statusCode", statusCode, "status", status)
 		var sequenceAction wp5v1alpha1.Action
 		if statusCode == 404 { // Not found => New
 			sequenceAction.Name = sequence.Name
@@ -495,10 +549,9 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 			sequenceAction.Annotations = sequence.Annotations
 			sequenceAction.Id = workflowManifest.Annotations["id"]
 			sequenceAction.Version = workflowManifest.Annotations["version"]
-			//sequenceAction.Code = sequence.Actions
 			sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
 			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, &sequenceAction)
-			logger.Info("Create Sequence: ", "statusCode", statusCode, "status", status)
+			log.Info(pathLOG+"[UpdateExternalResources] Create Sequence: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
 				UpdateActionStatus(workflowManifest, &sequenceAction, status)
 				return goerrors.New("Create Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
@@ -510,10 +563,9 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 				sequenceAction.Annotations = sequence.Annotations
 				sequenceAction.Id = workflowManifest.Annotations["id"]
 				sequenceAction.Version = workflowManifest.Annotations["version"]
-				//sequenceAction.Code = sequence.Actions
 				sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
 				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, &sequenceAction, false)
-				logger.Info("Update Sequence: ", "statusCode", statusCode, "status", status)
+				log.Info(pathLOG+"[UpdateExternalResources] Update Sequence: ", "statusCode", statusCode, "status", status)
 				if statusCode != 200 {
 					UpdateActionStatus(workflowManifest, &sequenceAction, status)
 					return goerrors.New("Update Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
@@ -525,13 +577,15 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 			return goerrors.New("Create/Update Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
 		}
 		UpdateActionStatus(workflowManifest, &sequenceAction, "")
-	} // if workflowManifest.Spec.Execution == "NativeSequence"
-	//}		// for pkgInfo.Sequences
-	//}		// for workflowManifest.Spec.Packages
-	logger.Info("UpdateExternalResources() end.")
+	}
+
+	log.Info(pathLOG + "[UpdateExternalResources] UpdateExternalResources() end.")
 	return nil
 } // UpdateExternalResources()
 
+/**
+ *
+ */
 func normalizeSeqActionsFQN(sequence string, namespace string, pckg string) string {
 	var result string
 	if len(sequence) == 0 {
@@ -566,101 +620,9 @@ func normalizeSeqActionsFQN(sequence string, namespace string, pckg string) stri
 	return result
 } // normalizeSeqActionsFQN()
 
-/*
-func CreateServiceForOpenWhiskProxy(workflowManifest *wp5v1alpha1.Workflow) *corev1.Service {
-	var PHYSICS_OW_PROXY_NAME string = lookupEnv("PHYSICS_OW_PROXY_NAME", "physics-ow-proxy")
-	var PHYSICS_OW_PROXY_ENDPOINT string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
-	//var PHYSICS_OW_PROXY_HOST string
-	//var PHYSICS_OW_PROXY_PORT int64
-	if strings.Count(PHYSICS_OW_PROXY_ENDPOINT, ":") < 2 {
-		PHYSICS_OW_PROXY_ENDPOINT += ":80"
-	}
-	PHYSICS_OW_PROXY_PORT, err := strconv.ParseInt(strings.Split(PHYSICS_OW_PROXY_ENDPOINT, ":")[2], 10, 0)
-	if err != nil {
-		PHYSICS_OW_PROXY_PORT = 8090
-	}
-	svc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      PHYSICS_OW_PROXY_NAME,
-			Namespace: workflowManifest.Namespace,
-			Labels:    map[string]string{"app": PHYSICS_OW_PROXY_NAME, "tier": "api"},
-		},
-		Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{{
-				Name:       PHYSICS_OW_PROXY_NAME + "-tcp",
-				Protocol:   "TCP",
-				Port:       int32(PHYSICS_OW_PROXY_PORT),
-				TargetPort: intstr.IntOrString{IntVal: int32(PHYSICS_OW_PROXY_PORT)},
-				NodePort:   0,
-			}},
-			Selector: map[string]string{"app": PHYSICS_OW_PROXY_NAME, "tier": "api"},
-		},
-	}
-	return svc
-} // CreateServiceForOpenWhiskProxy()
-
-func CreateDeploymentForOpenWhiskProxy(workflowManifest *wp5v1alpha1.Workflow) *appsv1.Deployment {
-	var PHYSICS_OW_PROXY_NAME string = lookupEnv("PHYSICS_OW_PROXY_NAME", "physics-ow-proxy")
-	var PHYSICS_OW_PROXY_ENDPOINT string = lookupEnv("PHYSICS_OW_PROXY_ENDPOINT", "http://localhost:8090")
-	var PHYSICS_OW_ENDPOINT string = lookupEnv("PHYSICS_OW_ENDPOINT", "http://localhost:3233")
-	var PHYSICS_OW_PROXY_IMAGE string = lookupEnv("PHYSICS_OW_PROXY_IMAGE", "physics-ow-proxy:latest")
-	var PHYSICS_OW_PROXY_IPP string = lookupEnv("PHYSICS_OW_PROXY_IPP", "Always")
-	//var PHYSICS_OW_PROXY_HOST string
-	//var PHYSICS_OW_PROXY_PORT int64
-	if strings.Count(PHYSICS_OW_PROXY_ENDPOINT, ":") < 2 {
-		PHYSICS_OW_PROXY_ENDPOINT += ":80"
-	}
-	PHYSICS_OW_PROXY_PORT, err := strconv.ParseInt(strings.Split(PHYSICS_OW_PROXY_ENDPOINT, ":")[2], 10, 0)
-	if err != nil {
-		PHYSICS_OW_PROXY_PORT = 8090
-	}
-	var replicas int32 = 1
-	dep := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      PHYSICS_OW_PROXY_NAME,
-			Namespace: workflowManifest.Namespace,
-			Labels:    map[string]string{"app": PHYSICS_OW_PROXY_NAME, "tier": "api"},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": PHYSICS_OW_PROXY_NAME, "tier": "api"},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": PHYSICS_OW_PROXY_NAME, "tier": "api"},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{
-						Image: PHYSICS_OW_PROXY_IMAGE,
-						//Image: "registry.apps.ocphub.physics-faas.eu/wp4/orchestrator:latest",
-						//ImagePullPolicy: "Always",
-						ImagePullPolicy: corev1.PullPolicy(PHYSICS_OW_PROXY_IPP),
-						Name:            PHYSICS_OW_PROXY_NAME,
-						Ports: []corev1.ContainerPort{{
-							ContainerPort: int32(PHYSICS_OW_PROXY_PORT),
-						}},
-						Env: []corev1.EnvVar{{
-							Name:  "PHYSICS_OW_PROXY_ENDPOINT",
-							Value: PHYSICS_OW_PROXY_ENDPOINT,
-						},
-							{
-								Name:  "PHYSICS_OW_ENDPOINT",
-								Value: PHYSICS_OW_ENDPOINT,
-							}},
-					}},
-					//ImagePullSecrets: []corev1.LocalObjectReference{{
-					//	Name: "regcred",
-					//}},
-				},
-			},
-		},
-	}
-	// Set OpenwhiskManifest instance as the owner and controller
-	//ctrl.SetControllerReference(openwhiskManifest, dep, r.Scheme)
-	return dep
-} // CreateDeploymentForOpenWhiskProxy()
-*/
+/**
+ *
+ */
 func lookupEnv(name string, value string) string {
 	result, ok := os.LookupEnv(name) // os.Getenv(name)
 	if !ok {

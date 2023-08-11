@@ -1,19 +1,21 @@
-/*
-Copyright 2022.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
+// Copyright 2021 Atos
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Created on 23 Mar 2022
+// Updated on 23 Mar 2022
+//
+// @author: ATOS
 package main
 
 import (
@@ -36,9 +38,13 @@ import (
 	zaplogfmt "github.com/sykesm/zap-logfmt"
 	uzap "go.uber.org/zap"
 	wp5v1alpha1 "gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/api/v1alpha1"
-	"gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/controllers"
-	//+kubebuilder:scaffold:imports
+	"gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/controllers" //+kubebuilder:scaffold:imports
+
+	log "gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/common/logs"
 )
+
+// path used in logs
+const pathLOG string = "## [PHYSICS-WORKFLOW-OPERATOR] [Main] "
 
 var (
 	scheme   = runtime.NewScheme()
@@ -46,6 +52,8 @@ var (
 )
 
 func init() {
+	log.Debug(pathLOG + "[init] Initializing schemes ...")
+
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(wp5v1alpha1.AddToScheme(scheme))
@@ -53,6 +61,16 @@ func init() {
 }
 
 func main() {
+	log.Info("[PHYSICS-WORKFLOW-OPERATOR; version: v0.0.1; date: 2023.08.11; id: 1]")
+
+	log.Debug(pathLOG + "  Getting OPERATOR environment variables...")
+	log.Debug(pathLOG + "    PHYSICS_OW_PROXY_ENDPOINT .... " + os.Getenv("PHYSICS_OW_PROXY_ENDPOINT"))
+	log.Debug(pathLOG + "    PHYSICS_ACTION_PROXY_IMAGE ... " + os.Getenv("PHYSICS_ACTION_PROXY_IMAGE"))
+	log.Debug(pathLOG + "    PHYSICS_OW_ENDPOINT .......... " + os.Getenv("PHYSICS_OW_ENDPOINT"))
+	log.Debug(pathLOG + "    PHYSICS_OW_AUTH .............. " + os.Getenv("PHYSICS_OW_AUTH"))
+	log.Debug(pathLOG + "    PHYSICS_OW_API_VERSION ....... " + os.Getenv("PHYSICS_OW_API_VERSION"))
+	log.Debug(pathLOG + "    PHYSICS_OW_NAMESPACE ......... " + os.Getenv("PHYSICS_OW_NAMESPACE"))
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
