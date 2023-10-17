@@ -119,8 +119,8 @@ spec:
             stage('Build docker') {
             container('dind') {
                     sh """
-                    make docker-build
-                    #docker build -t ${dockerPhysics}/${project}/${dockerimagename} .
+                    #make docker-build
+                    docker build -t ${dockerPhysics}/${project}/${dockerimagename} .
                     """
                 }   
             } 
