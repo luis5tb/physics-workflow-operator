@@ -137,10 +137,7 @@ spec:
                     sh """
                         docker image ls
                         docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
-                        echo "Version retrieved is: $DOCKERIMAGETAG"
-                        docker tag  '${dockerimagename}:${DOCKERIMAGETAG}' '${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}'
-                        docker image ls
-                        docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}
+                        docker push ${dockerPhysics}/${project}/${dockerimagename}
                     """
                     }
                 }
