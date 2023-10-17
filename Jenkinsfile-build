@@ -48,118 +48,118 @@ spec:
 ) {
 
 
-/* Slack notify integration */
+    /* Slack notify integration */
 
-def notifySlack = { String buildStatus ->
-    // Build status of null means success.
-    buildStatus = buildStatus ?: 'SUCCESS'
+    def notifySlack = { String buildStatus ->
+        // Build status of null means success.
+        buildStatus = buildStatus ?: 'SUCCESS'
 
-    def color
+        def color
 
-    if (buildStatus == 'STARTED') {
-        color = '#D4DADF'
-    } else if (buildStatus == 'SUCCESS') {
-        color = '#BDFFC3'
-    } else if (buildStatus == 'UNSTABLE') {
-        color = '#FFFE89'
-    } else {
-        color = '#FF9FA1'
-    }
-
-    def msg = "${buildStatus}: `${env.JOB_NAME}` #${env.BUILD_NUMBER}:\n${env.BUILD_URL}"
-
-    println "slackSend -> ${msg}"
-    //slackSend(color: color, message: msg)
-}
-
-
-node(label) {
-    def project = "wp5"
-    def dockerPhysics = "registry.apps.ocphub.physics-faas.eu"
-    def registryPhysics = "https://registry.apps.ocphub.physics-faas.eu"
-    checkout scm
-
-
-stage('Testing condition'){  
-    if(env.deploy_dev.toBoolean()){  
-        echo "You have selected to deploy in dev namespace"
-        def tmp_projectname = sh returnStdout: true, script: "echo 'dev' | tr -d '[:space:]'"
-        env.projectname = tmp_projectname
-    } else {
-        echo "You have selected to deploy in your namespace"
-    }
-}   
-
-
-stage('Check condition') {
-	container('dind') {
-         sh """
-         echo ${projectname}
-         """
-    }   
-}
-
-
-try {
-    notifySlack('STARTED')
-
-stage('Build') {
-   container('dind') {
-         sh """
-         apk update
-         apk add go
-         apk add bash
-         apk add make
-         make build
-         """
-    }   
-} 
-
-
-stage('Build docker') {
-   container('dind') {
-         sh """
-         make docker-build
-         #docker build -t ${dockerPhysics}/${project}/${dockerimagename} .
-         """
-    }   
-} 
-
-
-stage('Push Docker image') {
-    container('dind') {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding',
-          credentialsId: 'jenkins',
-          usernameVariable: 'JENKINS_USER',
-          passwordVariable: 'JENKINS_PASSWORD']]) {
-          def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}| tr -d '[:space:]'"
-          env.imgversion = DOCKERIMAGETAG
-          sh """
-            docker image ls
-            docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
-            echo "Version retrieved is: $DOCKERIMAGETAG"
-            docker tag  '${dockerimagename}:${DOCKERIMAGETAG}' '${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}'
-            docker image ls
-            docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}
-          """
+        if (buildStatus == 'STARTED') {
+            color = '#D4DADF'
+        } else if (buildStatus == 'SUCCESS') {
+            color = '#BDFFC3'
+        } else if (buildStatus == 'UNSTABLE') {
+            color = '#FFFE89'
+        } else {
+            color = '#FF9FA1'
         }
+
+        def msg = "${buildStatus}: `${env.JOB_NAME}` #${env.BUILD_NUMBER}:\n${env.BUILD_URL}"
+
+        println "slackSend -> ${msg}"
+        //slackSend(color: color, message: msg)
     }
-}
-
-}catch (e) {
-    println "Failed to deploy - ${currentBuild.fullDisplayName}"
-    notifySlack('UNSTABLE')
-}
-finally {
-    // Success or failure, always send notifications
-    notifySlack(currentBuild.result)
-}      
 
 
-stage ('Start deploy pipeline') {
-    build job: 'physics-workflow-operator-DEPLOY', parameters: [string(name: 'projectname',  value: "${projectname}"), string(name: 'version',  value: "${imgversion}")]
-}
+    node(label) {
+        def project = "wp5"
+        def dockerPhysics = "registry.apps.ocphub.physics-faas.eu"
+        def registryPhysics = "https://registry.apps.ocphub.physics-faas.eu"
+        checkout scm
 
 
-}   // node()
+        stage('Testing condition'){  
+            if(env.deploy_dev.toBoolean()){  
+                echo "You have selected to deploy in dev namespace"
+                def tmp_projectname = sh returnStdout: true, script: "echo 'dev' | tr -d '[:space:]'"
+                env.projectname = tmp_projectname
+            } else {
+                echo "You have selected to deploy in your namespace"
+            }
+        }   
+
+
+        stage('Check condition') {
+            container('dind') {
+                sh """
+                echo ${projectname}
+                """
+            }   
+        }
+
+
+        try {
+            notifySlack('STARTED')
+
+            stage('Build') {
+            container('dind') {
+                    sh """
+                    apk update
+                    apk add go
+                    apk add bash
+                    apk add make
+                    make build
+                    """
+                }   
+            } 
+
+
+            stage('Build docker') {
+            container('dind') {
+                    sh """
+                    make docker-build
+                    #docker build -t ${dockerPhysics}/${project}/${dockerimagename} .
+                    """
+                }   
+            } 
+
+
+            stage('Push Docker image') {
+                container('dind') {
+                    withCredentials([[$class: 'UsernamePasswordMultiBinding',
+                    credentialsId: 'jenkins',
+                    usernameVariable: 'JENKINS_USER',
+                    passwordVariable: 'JENKINS_PASSWORD']]) {
+                    def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}| tr -d '[:space:]'"
+                    env.imgversion = DOCKERIMAGETAG
+                    sh """
+                        docker image ls
+                        docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
+                        echo "Version retrieved is: $DOCKERIMAGETAG"
+                        docker tag  '${dockerimagename}:${DOCKERIMAGETAG}' '${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}'
+                        docker image ls
+                        docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}
+                    """
+                    }
+                }
+            }
+
+        }catch (e) {
+            println "Failed to deploy - ${currentBuild.fullDisplayName}"
+            notifySlack('UNSTABLE')
+        }
+        finally {
+            // Success or failure, always send notifications
+            notifySlack(currentBuild.result)
+        }      
+
+
+        stage ('Start deploy pipeline') {
+            build job: 'physics-workflow-operator-DEPLOY', parameters: [string(name: 'projectname',  value: "${projectname}"), string(name: 'version',  value: "${imgversion}")]
+        }
+
+
+    }   // node()
 }   // podTemplate()
