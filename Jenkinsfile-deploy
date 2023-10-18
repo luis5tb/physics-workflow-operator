@@ -34,78 +34,120 @@ spec:
 """
 ) {
 
-/* Slack notify integration */
+  /* Slack notify integration */
 
-def notifySlack = { String buildStatus ->
-    // Build status of null means success.
-    buildStatus = buildStatus ?: 'SUCCESS'
+  def notifySlack = { String buildStatus ->
+      // Build status of null means success.
+      buildStatus = buildStatus ?: 'SUCCESS'
 
-    def color
+      def color
 
-    if (buildStatus == 'STARTED') {
-        color = '#D4DADF'
-    } else if (buildStatus == 'SUCCESS') {
-        color = '#BDFFC3'
-    } else if (buildStatus == 'UNSTABLE') {
-        color = '#FFFE89'
-    } else {
-        color = '#FF9FA1'
-    }
-
-    def msg = "${buildStatus}: `${env.JOB_NAME}` #${env.BUILD_NUMBER}:\n${env.BUILD_URL}"
-
-    println "slackSend - ${msg}"
-    //slackSend(color: color, message: msg)
-}
-
-node(label) {
-  def project = "wp5"
-  def dockerPhysics = "registry.apps.ocphub.physics-faas.eu"
-  def registryPhysics = "https://registry.apps.ocphub.physics-faas.eu"
-  checkout scm
-     try {
-        notifySlack('STARTED')
-
- stage('Deploy Orchestrator') {
-    container('oc-client') {      
-     configFileProvider(
-        [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
-       def CTRL = sh returnStdout: true, script: "echo '${dockerPhysics}/${project}/${dockerimagename}:${version}'|tr -d '[:space:]'"
-       env.controller = CTRL
-       sh """
-            kustomize version
-            echo " controller = $controller"
-            export KUBECONFIG=$CONFIG
-            echo "${projectname}"
-            echo "${version}"
-            # Install building tools
-            yum install -y make wget gcc
-            # Install golang
-            wget -q https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
-            tar -C /usr/local -xzf go1.18.1.linux-amd64.tar.gz
-            export PATH=$PATH:/usr/local/go/bin
-            GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
-            cp /usr/bin/kustomize /home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin/
-            # Install CRDs
-            #make uninstall
-            #make install
-            # Deploy Controller
-            make deploy IMG="$controller"
-            #cd config/manager && kustomize edit set image controller="$controller"
-            ##kustomize edit set tag "${version}"
-            #cd ../..
-            #kustomize build config/default | kubectl apply -f -
-          """
+      if (buildStatus == 'STARTED') {
+          color = '#D4DADF'
+      } else if (buildStatus == 'SUCCESS') {
+          color = '#BDFFC3'
+      } else if (buildStatus == 'UNSTABLE') {
+          color = '#FFFE89'
+      } else {
+          color = '#FF9FA1'
       }
-     }
-    }
-}catch (e) {
-        println "Failed to deploy - ${currentBuild.fullDisplayName}"
-        notifySlack('UNSTABLE')
-           }
- finally {
-            // Success or failure, always send notifications
-            notifySlack(currentBuild.result)
-         }
- }
+
+      def msg = "${buildStatus}: `${env.JOB_NAME}` #${env.BUILD_NUMBER}:\n${env.BUILD_URL}"
+
+      println "slackSend - ${msg}"
+      //slackSend(color: color, message: msg)
+  }
+
+  node(label) {
+    def project = "wp5"
+    def dockerPhysics = "registry.apps.ocphub.physics-faas.eu"
+    def registryPhysics = "https://registry.apps.ocphub.physics-faas.eu"
+    checkout scm
+      try {
+          notifySlack('STARTED')
+
+          stage('Deploy Application') {
+                  container('oc-client') {      
+                  configFileProvider(
+                      [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
+
+                      def T = sh returnStdout: true, script: 'date +%B-%d-%y-%H-%M-%S'
+                      def TIME = sh returnStdout: true, script: "echo '$T' | tr -d '[:space:]'"
+          
+                      sh """
+                          export KUBECONFIG=$CONFIG
+                          echo ${projectname} - ${dockerimagename}
+                          echo "-------------"
+
+                          # Install CRDs
+
+                          cd bundle
+                          kubectl apply -f ./manifests
+
+                          # Install Operator
+
+                          cd .
+                          cd operator/deployment/kubernetes
+                          kubectl kustomize ./kustomizer/overlays/testbed/
+                          kubectl apply -k ./kustomizer/overlays/testbed/
+                      """
+
+
+                    }
+                  }
+              }
+
+
+          /*stage('Deploy Orchestrator') {
+              container('oc-client') {      
+              configFileProvider(
+                  [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
+                def CTRL = sh returnStdout: true, script: "echo '${dockerPhysics}/${project}/${dockerimagename}:${version}'|tr -d '[:space:]'"
+                env.controller = CTRL
+                sh """
+                      export KUBECONFIG=$CONFIG
+                      echo ${projectname} - ${dockerimagename}
+                      echo "-------------"
+
+                      cd resources/deployment/kubernetes
+
+                      kubectl kustomize ./kustomizer/overlays/testbed/
+                      kubectl apply -k ./kustomizer/overlays/testbed/
+
+
+
+                      kustomize version
+                      echo " controller = $controller"
+                      export KUBECONFIG=$CONFIG
+                      echo "${projectname}"
+                      echo "${version}"
+                      # Install building tools
+                      yum install -y make wget gcc
+                      # Install golang
+                      wget -q https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
+                      tar -C /usr/local -xzf go1.18.1.linux-amd64.tar.gz
+                      export PATH=$PATH:/usr/local/go/bin
+                      GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+                      cp /usr/bin/kustomize /home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin/
+                      # Install CRDs
+                      #make uninstall
+                      #make install
+                      # Deploy Controller
+                      make deploy IMG="$controller"
+                      #cd config/manager && kustomize edit set image controller="$controller"
+                      ##kustomize edit set tag "${version}"
+                      #cd ../..
+                      #kustomize build config/default | kubectl apply -f -
+                    """
+                }
+              }
+              }*/
+            } catch (e) {
+                println "Failed to deploy - ${currentBuild.fullDisplayName}"
+                notifySlack('UNSTABLE')
+            } finally {
+                // Success or failure, always send notifications
+                notifySlack(currentBuild.result)
+            }
+          }
 }

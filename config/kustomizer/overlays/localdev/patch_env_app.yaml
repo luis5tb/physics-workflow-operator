@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: operator-app
+  namespace: openwhisk  
+spec:
+  template:
+    spec:
+      containers:
+        - name: operator
+          env:
+            - name: PHYSICS_OW_PROXY_ENDPOINT 
+              value: "http://ow-proxy.openwhisk"
+            - name: PHYSICS_ACTION_PROXY_IMAGE  
+              #value: "action-proxy:v1"
+              value: "registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1"

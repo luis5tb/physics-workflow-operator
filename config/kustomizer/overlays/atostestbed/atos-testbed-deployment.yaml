@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: operator-app
+  namespace: physics-atos
+spec:
+  template:
+    spec:
+      containers:
+      - name: operator-app
+        image: registry.atosresearch.eu:18465/operator
+        env:
+          - name: PHYSICS_OW_PROXY_ENDPOINT 
+            value: "http://ow-proxy-app.physics-atos:8090"
+          - name: PHYSICS_ACTION_PROXY_IMAGE  
+            #value: "action-proxy:v1"
+            value: "registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1"
+          - name: PHYSICS_OW_ENDPOINT 
+            value: "10.43.146.95" #"http://owdev-nginx.openwhisk"
+          - name: PHYSICS_OW_AUTH
+            value: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+          - name: PHYSICS_OW_API_VERSION
+            value: "v1"
+          - name: PHYSICS_OW_NAMESPACE
+            value: "_"
+      imagePullSecrets:
+      - name: nexus-secret
+

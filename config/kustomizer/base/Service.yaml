@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: operator-app
+  labels:
+    app: operator-app
+    tier: api
+  namespace: physics-atos
+spec:
+  ports:
+    - protocol: TCP
+      port: 8070
+      targetPort: 8070
+  selector:
+    app: operator-app
+    tier: api
+  sessionAffinity: None
+status:
+  loadBalancer: {}

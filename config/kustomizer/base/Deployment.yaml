@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: operator-app
+  labels:
+    app: operator-app
+    tier: api
+  namespace: physics-atos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: operator-app
+      tier: api
+  template:
+    metadata:
+      labels:
+        app: operator-app
+        tier: api
+    spec:
+      serviceAccountName: manifestwork-editor-service-account
+      containers:
+      - name: operator-app
+        image: registry.apps.ocphub.physics-faas.eu/wp4/operator-app:latest
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8070
+        env:
+          - name: PHYSICS_OW_PROXY_ENDPOINT 
+            value: "http://localhost:8090"
+          - name: PHYSICS_ACTION_PROXY_IMAGE  
+            value: "registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1"
+          - name: PHYSICS_OW_ENDPOINT 
+            value: ""
+          - name: PHYSICS_OW_AUTH
+            value: ""
+          - name: PHYSICS_OW_API_VERSION
+            value: ""
+          - name: PHYSICS_OW_NAMESPACE
+            value: ""  
