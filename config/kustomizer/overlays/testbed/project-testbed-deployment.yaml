@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: operator-app
-  namespace: core  
+  namespace: physics-atos  
 spec:
   template:
     spec:
@@ -13,3 +13,5 @@ spec:
               value: "http://physics-ow-proxy.physics-atos.svc.cluster.local"
             - name: PHYSICS_ACTION_PROXY_IMAGE  
               value: "registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1"  
+      imagePullSecrets:
+         - name: regcred
