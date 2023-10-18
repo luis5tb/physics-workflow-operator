@@ -81,13 +81,13 @@ spec:
 
                           # Install CRDs
 
-                          cd bundle
-                          kubectl apply -f ./manifests
+                          #cd bundle
+                          #kubectl apply -f ./manifests
 
                           # Install Operator
 
                           cd .
-                          cd operator/deployment/kubernetes
+                          cd config
                           kubectl kustomize ./kustomizer/overlays/testbed/
                           kubectl apply -k ./kustomizer/overlays/testbed/
                       """
