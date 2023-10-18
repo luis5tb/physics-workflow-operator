@@ -7,7 +7,7 @@ spec:
   template:
     spec:
       containers:
-        - name: operator
+        - name: operator-app
           image: registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator
           env:
             - name: PHYSICS_OW_PROXY_ENDPOINT 
