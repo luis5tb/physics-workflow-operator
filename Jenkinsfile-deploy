@@ -77,14 +77,15 @@ spec:
                       sh """
                           export KUBECONFIG=$CONFIG
                           echo ${projectname} - ${dockerimagename}
-                          echo "-------------"
 
                           # Install CRDs
+                          echo "-- Install CRDs --"
 
                           #cd bundle
                           #kubectl apply -f ./manifests
 
                           # Install Operator
+                          echo "-- Install Operator --"
 
                           cd .
                           cd config
@@ -97,51 +98,6 @@ spec:
                   }
               }
 
-
-          /*stage('Deploy Orchestrator') {
-              container('oc-client') {      
-              configFileProvider(
-                  [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
-                def CTRL = sh returnStdout: true, script: "echo '${dockerPhysics}/${project}/${dockerimagename}:${version}'|tr -d '[:space:]'"
-                env.controller = CTRL
-                sh """
-                      export KUBECONFIG=$CONFIG
-                      echo ${projectname} - ${dockerimagename}
-                      echo "-------------"
-
-                      cd resources/deployment/kubernetes
-
-                      kubectl kustomize ./kustomizer/overlays/testbed/
-                      kubectl apply -k ./kustomizer/overlays/testbed/
-
-
-
-                      kustomize version
-                      echo " controller = $controller"
-                      export KUBECONFIG=$CONFIG
-                      echo "${projectname}"
-                      echo "${version}"
-                      # Install building tools
-                      yum install -y make wget gcc
-                      # Install golang
-                      wget -q https://go.dev/dl/go1.18.1.linux-amd64.tar.gz
-                      tar -C /usr/local -xzf go1.18.1.linux-amd64.tar.gz
-                      export PATH=$PATH:/usr/local/go/bin
-                      GOBIN=/home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
-                      cp /usr/bin/kustomize /home/jenkins/agent/workspace/physics-workflow-operator-DEPLOY/bin/
-                      # Install CRDs
-                      #make uninstall
-                      #make install
-                      # Deploy Controller
-                      make deploy IMG="$controller"
-                      #cd config/manager && kustomize edit set image controller="$controller"
-                      ##kustomize edit set tag "${version}"
-                      #cd ../..
-                      #kustomize build config/default | kubectl apply -f -
-                    """
-                }
-              }
-              }*/
             } catch (e) {
                 println "Failed to deploy - ${currentBuild.fullDisplayName}"
                 notifySlack('UNSTABLE')
