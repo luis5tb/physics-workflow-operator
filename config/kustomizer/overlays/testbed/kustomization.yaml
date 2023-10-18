@@ -4,8 +4,11 @@ kind: Kustomization
 resources:
 - ../../base/
 
-patches:
-  - path: project-testbed-deployment.yaml
-    target:
-      kind: Deployment
+patchesStrategicMerge:
+- project-testbed-deployment.yaml
+
+#patches:
+#  - path: project-testbed-deployment.yaml
+#    target:
+#      kind: Deployment
 
