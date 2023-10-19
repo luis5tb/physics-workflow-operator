@@ -5,7 +5,7 @@ metadata:
   labels:
     app: operator-app
     tier: api
-  namespace: physics-atos
+  namespace: physics-worklow-operator-system
 spec:
   replicas: 1
   selector:
