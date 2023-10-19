@@ -7,8 +7,4 @@ bases:
 patchesStrategicMerge:
 - project-testbed-deployment.yaml
 
-#patches:
-#  - path: project-testbed-deployment.yaml
-#    target:
-#      kind: Deployment
 

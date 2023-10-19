@@ -11,7 +11,7 @@ spec:
           image: registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator
           env:
             - name: PHYSICS_OW_PROXY_ENDPOINT 
-              value: "http://ow-proxy-app.physics-atos.svc.cluster.local"
+              value: "http://ow-proxy-app.physics-atos"
             - name: PHYSICS_ACTION_PROXY_IMAGE  
               value: "registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1"  
       imagePullSecrets:

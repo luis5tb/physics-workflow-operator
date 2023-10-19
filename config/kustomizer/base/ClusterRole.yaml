@@ -13,5 +13,7 @@ rules:
       - patch
     apiGroups:
       - work.open-cluster-management.io
+      - wp5.physics-faas.eu
     resources:
       - manifestworks
+      - workflows
