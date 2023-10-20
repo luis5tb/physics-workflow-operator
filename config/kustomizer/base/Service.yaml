@@ -5,7 +5,7 @@ metadata:
   labels:
     app: operator-app
     tier: api
-  namespace: physics-worklow-operator-system
+  namespace: physics-atos
 spec:
   ports:
     - protocol: TCP

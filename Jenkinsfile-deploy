@@ -66,7 +66,7 @@ spec:
       try {
           notifySlack('STARTED')
 
-          stage('Deploy Application') {
+            stage('Deploy Application') {
                   container('oc-client') {      
                   configFileProvider(
                       [configFile(fileId: 'jekins-devops-deploy', variable: 'CONFIG')]){
@@ -89,8 +89,8 @@ spec:
 
                           cd .
                           cd config
-                          kubectl kustomize ./kustomizer/overlays/testbed/
-                          kubectl apply -k ./kustomizer/overlays/testbed/
+                          kubectl kustomize ./kustomizer/overlays/openshift/
+                          kubectl apply -k ./kustomizer/overlays/openshift/
                       """
 
 

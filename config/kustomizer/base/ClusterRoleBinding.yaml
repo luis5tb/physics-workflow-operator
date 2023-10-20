@@ -5,7 +5,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: manifestwork-editor-service-account
-    namespace: physics-worklow-operator-system
+    namespace: physics-atos
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

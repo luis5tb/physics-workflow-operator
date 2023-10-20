@@ -1,4 +1,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: physics-worklow-operator-system
+  name: physics-atos
