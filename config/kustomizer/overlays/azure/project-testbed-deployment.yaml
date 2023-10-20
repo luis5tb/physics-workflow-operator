@@ -14,9 +14,5 @@ spec:
               value: "http://172.30.22.73:8090"
             - name: PHYSICS_ACTION_PROXY_IMAGE  
               value: "registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1"  
-            - name: PHYSICS_OW_ENDPOINT 
-              value: "http://owdev-nginx.openwhisk"
-            - name: PHYSICS_OW_AUTH
-              value: "17dz39c2-62f7-3ed6-9b88-925ce4l3c104:459bO3xUERmNZ9v2BLU1dRYFpXlPkccOFqm31LdAsMgRU4VrNZ9dhORZGuLJGIqF"              
       imagePullSecrets:
          - name: regcred

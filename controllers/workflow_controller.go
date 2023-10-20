@@ -88,8 +88,9 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	logow.Info(pathLOG + "[Reconcile] 2. Checking if Workflow Manifest is marked to be deleted ...")
 	isWorkflowManifestMarkedToBeDeleted := workflowManifest.GetDeletionTimestamp() != nil
 
-	if !isWorkflowManifestMarkedToBeDeleted &&
-		controllerutil.ContainsFinalizer(workflowManifest, workflowManifestFinalizer) {
+	if !isWorkflowManifestMarkedToBeDeleted && controllerutil.ContainsFinalizer(workflowManifest, workflowManifestFinalizer) {
+		logow.Debug(pathLOG + "[Reconcile] Workflow Manifest is NOT marked to be deleted. Updating External resources and Workflow status ...")
+
 		err := UpdateExternalResources(logger, req.Namespace, workflowManifest)
 		r.UpdateWorkflowStatus(ctx, workflowManifest)
 		if err != nil {
