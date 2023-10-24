@@ -11,8 +11,17 @@ spec:
           image: registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator
           env:
             - name: PHYSICS_OW_PROXY_ENDPOINT 
-              value: "http://172.30.22.73:8090"
+              value: "http://10.106.148.146:8090"
             - name: PHYSICS_ACTION_PROXY_IMAGE  
               value: "registry.apps.ocphub.physics-faas.eu/wp4/action-proxy:v1"  
+            - name: PHYSICS_OW_ENDPOINT 
+              value: "http://owdev-nginx.openwhisk"
+              # 10.97.164.37  ;   80:31759/TCP,443:31001/TCP
+            - name: PHYSICS_OW_AUTH
+              value: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+            - name: PHYSICS_CLUSTER_KEY 
+              value: "azure"         
+            - name: LOG_LEVEL 
+              value: "trace"                  
       imagePullSecrets:
          - name: regcred

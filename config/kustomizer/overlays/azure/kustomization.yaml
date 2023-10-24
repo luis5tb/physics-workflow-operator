@@ -8,3 +8,9 @@ patchesStrategicMerge:
 - project-testbed-deployment.yaml
 
 
+images:
+  - name: registry.apps.ocphub.physics-faas.eu/wp4/physics-ow-proxy
+    newName: registry.apps.ocphub.physics-faas.eu/wp4/physics-ow-proxy
+
+
+namespace: physics-atos

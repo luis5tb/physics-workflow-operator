@@ -19,14 +19,36 @@
 package logs
 
 import (
+	"os"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 )
 
+var cluster_key string
+
 // init
 func init() {
-	log.SetFormatter(&log.TextFormatter{ForceColors: true, FullTimestamp: true})
-	//log.SetFormatter(&log.JSONFormatter{})
-	log.SetLevel(log.TraceLevel) // TraceLevel, DebugLevel, WarnLevel
+	log_level := os.Getenv("LOG_LEVEL")
+
+	log.SetFormatter(&log.TextFormatter{ForceColors: true, FullTimestamp: true}) //log.SetFormatter(&log.JSONFormatter{})
+
+	if len(log_level) == 0 {
+		log.SetLevel(log.InfoLevel)
+	} else {
+		if strings.ToLower(log_level) == "trace" {
+			log.SetLevel(log.TraceLevel)
+		} else if strings.ToLower(log_level) == "debug" {
+			log.SetLevel(log.DebugLevel)
+		} else {
+			log.SetLevel(log.InfoLevel)
+		}
+	}
+
+	cluster_key = os.Getenv("PHYSICS_CLUSTER_KEY")
+	if len(log_level) > 0 {
+		cluster_key = "[" + cluster_key + "] "
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,30 +62,35 @@ func Fatal(e error) {
 /*
  */
 func Trace(args ...interface{}) {
+	args = append([]interface{}{cluster_key}, args...)
 	log.Trace(args...)
 }
 
 /*
  */
 func Debug(args ...interface{}) {
+	args = append([]interface{}{cluster_key}, args...)
 	log.Debug(args...)
 }
 
 /*
  */
 func Info(args ...interface{}) {
+	args = append([]interface{}{cluster_key}, args...)
 	log.Info(args...)
 }
 
 /*
  */
 func Warn(args ...interface{}) {
+	args = append([]interface{}{cluster_key}, args...)
 	log.Warn(args...)
 }
 
 /*
  */
 func Error(args ...interface{}) {
+	args = append([]interface{}{cluster_key}, args...)
 	log.Error(args...)
 }
 

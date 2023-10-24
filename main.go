@@ -61,9 +61,11 @@ func init() {
 }
 
 func main() {
-	log.Info("[PHYSICS-WORKFLOW-OPERATOR; version: v0.0.1; date: 2023.08.11; id: 1]")
+	log.Info("[PHYSICS-WORKFLOW-OPERATOR; version: v1.0.0; date: 2023.10.24; id: 1]")
 
 	log.Debug(pathLOG + "  Getting OPERATOR environment variables...")
+	log.Debug(pathLOG + "    PHYSICS_CLUSTER_KEY .......... " + os.Getenv("PHYSICS_CLUSTER_KEY"))
+	log.Debug(pathLOG + "    LOG_LEVEL .................... " + os.Getenv("LOG_LEVEL"))
 	log.Debug(pathLOG + "    PHYSICS_OW_PROXY_ENDPOINT .... " + os.Getenv("PHYSICS_OW_PROXY_ENDPOINT"))
 	log.Debug(pathLOG + "    PHYSICS_ACTION_PROXY_IMAGE ... " + os.Getenv("PHYSICS_ACTION_PROXY_IMAGE"))
 	log.Debug(pathLOG + "    PHYSICS_OW_ENDPOINT .......... " + os.Getenv("PHYSICS_OW_ENDPOINT"))

@@ -17,6 +17,10 @@ spec:
             - name: PHYSICS_OW_ENDPOINT 
               value: "http://owdev-nginx.openwhisk"
             - name: PHYSICS_OW_AUTH
-              value: "17dz39c2-62f7-3ed6-9b88-925ce4l3c104:459bO3xUERmNZ9v2BLU1dRYFpXlPkccOFqm31LdAsMgRU4VrNZ9dhORZGuLJGIqF"              
+              value: "17dz39c2-62f7-3ed6-9b88-925ce4l3c104:459bO3xUERmNZ9v2BLU1dRYFpXlPkccOFqm31LdAsMgRU4VrNZ9dhORZGuLJGIqF" 
+            - name: PHYSICS_CLUSTER_KEY 
+              value: "openshift"         
+            - name: LOG_LEVEL 
+              value: "debug"              
       imagePullSecrets:
          - name: regcred
