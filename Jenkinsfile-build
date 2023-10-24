@@ -8,6 +8,7 @@ properties(
     [
         parameters(
             [
+                string(name: 'DOCKERIMAGETAG', defaultValue: '1.0.0', ),
                 string(name: 'dockerimagename', defaultValue: 'physics-workflow-operator', ),
                 booleanParam(name: 'deploy_dev', defaultValue: false),
                 string(name: 'projectname', defaultValue: 'physics-workflow-operator')
@@ -135,9 +136,10 @@ spec:
                     def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}| tr -d '[:space:]'"
                     env.imgversion = DOCKERIMAGETAG
                     sh """
+                        docker tag  '${dockerPhysics}/${project}/${dockerimagename}' '${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}'
                         docker image ls
                         docker login -u ${JENKINS_USER} -p ${JENKINS_PASSWORD} ${registryPhysics}
-                        docker push ${dockerPhysics}/${project}/${dockerimagename}
+                        docker push ${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}
                     """
                     }
                 }

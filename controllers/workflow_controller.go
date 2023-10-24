@@ -129,6 +129,8 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	logow.Info(pathLOG + "[Reconcile] Reconcile() end.")
 
+	time.Sleep(5 * time.Second)
+
 	return ctrl.Result{}, nil
 }
 
@@ -362,6 +364,7 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 			actionStatus.ActionCredentials = "" //*/
 		}
 	} else {
+		logow.Error(pathLOG + "[UpdateActionStatus] ERROR: " + message)
 		actionStatus.State = "Error"
 		actionStatus.Message = message
 	}
