@@ -133,8 +133,8 @@ spec:
                     credentialsId: 'jenkins',
                     usernameVariable: 'JENKINS_USER',
                     passwordVariable: 'JENKINS_PASSWORD']]) {
-                    def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}| tr -d '[:space:]'"
-                    env.imgversion = DOCKERIMAGETAG
+                    //def DOCKERIMAGETAG = sh returnStdout: true, script: "docker images '${dockerimagename}' --format {{.Tag}}| tr -d '[:space:]'"
+                    //env.imgversion = DOCKERIMAGETAG
                     sh """
                         docker tag  '${dockerPhysics}/${project}/${dockerimagename}' '${dockerPhysics}/${project}/${dockerimagename}:${DOCKERIMAGETAG}'
                         docker image ls
