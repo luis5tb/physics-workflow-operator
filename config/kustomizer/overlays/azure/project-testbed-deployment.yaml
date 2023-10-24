@@ -22,6 +22,10 @@ spec:
             - name: PHYSICS_CLUSTER_KEY 
               value: "azure"         
             - name: LOG_LEVEL 
-              value: "trace"                  
+              value: "trace"    
+            - name: PHYSICS_OW_API_VERSION
+              value: "v1"
+            - name: PHYSICS_OW_NAMESPACE
+              value: "_"              
       imagePullSecrets:
          - name: regcred

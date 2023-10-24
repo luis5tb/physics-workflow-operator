@@ -21,6 +21,10 @@ spec:
             - name: PHYSICS_CLUSTER_KEY 
               value: "openshift"         
             - name: LOG_LEVEL 
-              value: "debug"              
+              value: "debug" 
+            - name: PHYSICS_OW_API_VERSION
+              value: "v1"
+            - name: PHYSICS_OW_NAMESPACE
+              value: "_"             
       imagePullSecrets:
          - name: regcred
