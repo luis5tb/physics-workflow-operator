@@ -92,8 +92,13 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		logow.Debug(pathLOG + "[Reconcile] Workflow Manifest is NOT marked to be deleted. Updating External resources and Workflow status ...")
 
 		err := UpdateExternalResources(logger, req.Namespace, workflowManifest)
-		r.UpdateWorkflowStatus(ctx, workflowManifest)
 		if err != nil {
+			logow.Error(pathLOG+"[Reconcile] Failed to update external resources: ", err)
+		}
+
+		err = r.UpdateWorkflowStatus(ctx, workflowManifest)
+		if err != nil {
+			logow.Error(pathLOG+"[Reconcile] Failed to update workflow status: ", err)
 			return ctrl.Result{}, err
 		}
 	}
@@ -105,6 +110,7 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
 			if err := r.finalizeWorkflowManifest(ctx, req, workflowManifest); err != nil {
+				logow.Error(pathLOG+"[Reconcile] Failed to finalize workflow manifest: ", err)
 				return ctrl.Result{}, err
 			}
 
@@ -113,6 +119,7 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			controllerutil.RemoveFinalizer(workflowManifest, workflowManifestFinalizer)
 			err := r.Update(ctx, workflowManifest)
 			if err != nil {
+				logow.Error(pathLOG+"[Reconcile] Failed to remove workflow manifest: ", err)
 				return ctrl.Result{}, err
 			}
 		}
@@ -124,6 +131,7 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		controllerutil.AddFinalizer(workflowManifest, workflowManifestFinalizer)
 		err := r.Update(ctx, workflowManifest)
 		if err != nil {
+			logow.Error(pathLOG+"[Reconcile] Failed to add finalizer: ", err)
 			return ctrl.Result{}, err
 		}
 	}
