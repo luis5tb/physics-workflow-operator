@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
         - name: operator-app
-          image: registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator:1.0.2
+          image: registry.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator:1.0.3
           env:
             - name: PHYSICS_OW_PROXY_ENDPOINT 
               value: "http://10.108.97.160:8090"

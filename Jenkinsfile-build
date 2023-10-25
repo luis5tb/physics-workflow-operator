@@ -8,7 +8,7 @@ properties(
     [
         parameters(
             [
-                string(name: 'DOCKERIMAGETAG', defaultValue: '1.0.2', ),
+                string(name: 'DOCKERIMAGETAG', defaultValue: '1.0.3', ),
                 string(name: 'dockerimagename', defaultValue: 'physics-workflow-operator', ),
                 booleanParam(name: 'deploy_dev', defaultValue: false),
                 string(name: 'projectname', defaultValue: 'physics-workflow-operator')

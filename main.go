@@ -61,7 +61,7 @@ func init() {
 }
 
 func main() {
-	log.Info("[PHYSICS-WORKFLOW-OPERATOR; version: v1.0.2; date: 2023.10.25; id: 1]")
+	log.Info("[PHYSICS-WORKFLOW-OPERATOR; version: v1.0.3; date: 2023.10.25; id: 2]")
 
 	log.Debug(pathLOG + "  Getting OPERATOR environment variables...")
 	log.Debug(pathLOG + "    PHYSICS_CLUSTER_KEY .......... " + os.Getenv("PHYSICS_CLUSTER_KEY"))
