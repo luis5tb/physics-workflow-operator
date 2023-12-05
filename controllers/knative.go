@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"reflect"
-
 	"github.com/go-logr/logr"
 	wp5v1alpha1 "gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/api/v1alpha1"
 	logow "gogs.apps.ocphub.physics-faas.eu/wp5/physics-workflow-operator/common/logs"
@@ -22,20 +20,34 @@ import (
  */
 func UpdateKnativeWorkflowStatus(r *WorkflowReconciler, ctx context.Context, workflowManifest *wp5v1alpha1.Workflow, route string) error {
 	logow.Info(pathLOG + "[UpdateKnativeWorkflowStatus] Updating Workflow Status ...")
-	needs_status_update := false
-	if !reflect.DeepEqual("Available", workflowManifest.Status.ActionStatuses[0].State) {
-		workflowManifest.Status.ActionStatuses[0].State = "Available"
-		needs_status_update = true
-	}
-	if !reflect.DeepEqual(route, workflowManifest.Status.ActionStatuses[0].BackendURL) {
-		workflowManifest.Status.ActionStatuses[0].BackendURL = route
-		needs_status_update = true
-	}
-	if needs_status_update {
-		err := r.Status().Update(ctx, workflowManifest)
-		if err != nil {
-			return err
+	var found bool = false
+	var idx int = -1
+	var actionStatus wp5v1alpha1.ActionStatus
+
+	for k := range workflowManifest.Status.ActionStatuses {
+		if workflowManifest.Status.ActionStatuses[k].Id == workflowManifest.Spec.Actions[0].Id {
+			found = true
+			idx = k
 		}
+	}
+	if found {
+		actionStatus = workflowManifest.Status.ActionStatuses[idx]
+		actionStatus.State = "Available"
+		actionStatus.BackendURL = route
+		workflowManifest.Status.ActionStatuses[idx] = actionStatus
+	} else {
+		actionStatus = wp5v1alpha1.ActionStatus{
+			State:      "Available",
+			Id:         workflowManifest.Spec.Actions[0].Id,
+			BackendURL: route,
+		}
+		workflowManifest.Status.ActionStatuses = append(workflowManifest.Status.ActionStatuses, actionStatus)
+	}
+
+	err := r.Status().Update(ctx, workflowManifest)
+	if err != nil {
+		err = fmt.Errorf("Failed to update workflow status with Knative Service: %v", err)
+		return err
 	}
 	return nil
 }
@@ -213,7 +225,7 @@ func updateService(r *WorkflowReconciler, action wp5v1alpha1.Action, kn_s *unstr
 	unstructured.SetNestedField(kn_s.Object, annotations, "spec", "template", "metadata", "annotations")
 
 	// Update containerConcurrency
-	unstructured.SetNestedField(kn_s.Object, concurrency, "spec", "template", "spec", "containerConcurrency")
+	unstructured.SetNestedField(kn_s.Object, int64(concurrency), "spec", "template", "spec", "containerConcurrency")
 
 	// Update container image
 	unstructured.SetNestedField(kn_s.Object, action.Image, "spec", "template", "spec", "containers", "0", "image")

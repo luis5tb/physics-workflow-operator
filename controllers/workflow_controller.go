@@ -189,7 +189,7 @@ func (r *WorkflowReconciler) finalizeWorkflowManifest(ctx context.Context, req c
 
 	switch workflowManifest.Spec.Platform {
 	case KNATIVE_PLATFORM:
-		err := CleanUpKnativeResources(logger, req.Namespace, workflowManifest)
+		err := CleanUpKnativeResources(r, ctx, workflowManifest)
 		if err != nil {
 			//panic(err)
 			return err
