@@ -22,8 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -48,6 +46,9 @@ type WorkflowReconciler struct {
 }
 
 const workflowManifestFinalizer = "workflowmanifest/finalizer"
+
+const KNATIVE_PLATFORM = "knative"
+const OPENWHISK_PLATFORM = "openWhisk"
 
 //+kubebuilder:rbac:groups=wp5.physics-faas.eu,resources=workflows,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=wp5.physics-faas.eu,resources=workflows/status,verbs=get;update;patch
@@ -91,15 +92,32 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if !isWorkflowManifestMarkedToBeDeleted && controllerutil.ContainsFinalizer(workflowManifest, workflowManifestFinalizer) {
 		logow.Debug(pathLOG + "[Reconcile] Workflow Manifest is NOT marked to be deleted. Updating External resources and Workflow status ...")
 
-		err := UpdateExternalResources(logger, req.Namespace, workflowManifest)
-		if err != nil {
-			logow.Error(pathLOG+"[Reconcile] Failed to update external resources: ", err)
-		}
-
-		err = r.UpdateWorkflowStatus(ctx, workflowManifest)
-		if err != nil {
-			logow.Error(pathLOG+"[Reconcile] Failed to update workflow status: ", err)
-			return ctrl.Result{}, err
+		switch workflowManifest.Spec.Platform {
+		case KNATIVE_PLATFORM:
+			logow.Info(pathLOG + "[Reconcile] Knative Workflow")
+			route, err := ReconcileKnativeResources(r, ctx, logger, req.Namespace, workflowManifest)
+			if err != nil {
+				logow.Error(pathLOG+"[Reconcile] Failed to update external resources: ", err)
+				return ctrl.Result{}, err
+			}
+			err = UpdateKnativeWorkflowStatus(r, ctx, workflowManifest, route)
+			if err != nil {
+				logow.Error(pathLOG+"[Reconcile] Failed to update workflow status: ", err)
+				return ctrl.Result{}, err
+			}
+		case OPENWHISK_PLATFORM:
+			logow.Info(pathLOG + "[Reconcile] OpenWhisk Workflow")
+			err := ReconcileOpenWhiskResources(logger, req.Namespace, workflowManifest)
+			if err != nil {
+				logow.Error(pathLOG+"[Reconcile] Failed to update external resources: ", err)
+			}
+			err = r.UpdateOpenWhiskWorkflowStatus(ctx, workflowManifest)
+			if err != nil {
+				logow.Error(pathLOG+"[Reconcile] Failed to update workflow status: ", err)
+				return ctrl.Result{}, err
+			}
+		default:
+			logow.Error(pathLOG + "[Reconcile] Unknown platform")
 		}
 	}
 
@@ -178,10 +196,10 @@ func (r *WorkflowReconciler) finalizeWorkflowManifest(ctx context.Context, req c
 }
 
 /**
- * UpdateWorkflowStatus
+ * UpdateOpenWhiskWorkflowStatus
  */
-func (r *WorkflowReconciler) UpdateWorkflowStatus(ctx context.Context, workflowManifest *wp5v1alpha1.Workflow) error {
-	logow.Info(pathLOG + "[UpdateWorkflowStatus] Updating Workflow Status ...")
+func (r *WorkflowReconciler) UpdateOpenWhiskWorkflowStatus(ctx context.Context, workflowManifest *wp5v1alpha1.Workflow) error {
+	logow.Info(pathLOG + "[UpdateOpenWhiskWorkflowStatus] Updating Workflow Status ...")
 
 	var condition metav1.Condition
 	var conditions []metav1.Condition
@@ -265,10 +283,10 @@ func (r *WorkflowReconciler) UpdateWorkflowStatus(ctx context.Context, workflowM
 	}
 	err = r.Status().Update(ctx, workflowManifest)
 	if err != nil {
-		logow.Error(pathLOG+"[UpdateWorkflowStatus] Failed to update Workflow status: ", err)
+		logow.Error(pathLOG+"[UpdateOpenWhiskWorkflowStatus] Failed to update Workflow status: ", err)
 		return err
 	}
-	logow.Info(pathLOG + "[UpdateWorkflowStatus] UpdateWorkflowStatus() end.")
+	logow.Info(pathLOG + "[UpdateOpenWhiskWorkflowStatus] UpdateWorkflowStatus() end.")
 	return nil
 }
 
@@ -340,7 +358,6 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 		actionStatus.Message = ""
 		if _, ok := action.Annotations["remote"]; ok { // Remote function
 			actionStatus.Remote = "true"
-			actionStatus.BackendURL = "" // For action updates to remote
 
 			// TODO
 			/*actionStatus.ActionHost = ""        // BackendURL ??
@@ -350,7 +367,6 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 			if input, ok := action.FunctionInput[PHYSICS_ACTION_PROXY_PARAM]; ok {
 				if len(input.Value) > 0 {
 					actionStatus.State = "Available" // Ready to serving
-					actionStatus.BackendURL = input.Value
 
 					// TODO
 					/*actionStatus.ActionHost = ""        // BackendURL ??
@@ -364,7 +380,6 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 			logow.Debug(pathLOG + "[UpdateActionStatus] Local function")
 
 			actionStatus.State = "Available" // Ready to serving
-			actionStatus.BackendURL = setBackendURL(&actionStatus, workflowManifest.Annotations["cluster"], action.Annotations["api-id"])
 
 			// TODO
 			/*actionStatus.ActionHost = ""        // BackendURL ??
@@ -379,32 +394,4 @@ func UpdateActionStatus(workflowManifest *wp5v1alpha1.Workflow, action *wp5v1alp
 	workflowManifest.Status.ActionStatuses[idx] = actionStatus
 
 	logow.Info(pathLOG + "[UpdateActionStatus] Action Status updated")
-}
-
-/**
- *
- */
-func setBackendURL(actionStatus *wp5v1alpha1.ActionStatus, cluster string, apiID string) string {
-	logow.Debug(pathLOG + "[setBackendURL] Setting Backend URL ...")
-
-	var result string
-	var PHYSICS_BACKENDURL_PATTERN string = lookupEnv("PHYSICS_BACKENDURL_PATTERN",
-		"http://@REMOTE-CLUSTER-sub-ow.openwhisk.svc.clusterset.local/api/v1/web/@NAMESPACE/@PACKAGE/@ACTION.json") // OW Web url through by submariner (.json)
-	//	"http://@REMOTE-CLUSTER-sub-ow.openwhisk.svc.clusterset.local/api/@API-ID/@PACKAGE/@ACTION")		// OW API Gateway url through submariner
-	//var PHYSICS_APIGATEWAY_BASEURL string = lookupEnv("PHYSICS_APIGATEWAY_BASEURL",
-	//		"http://" + cluster + "-sub-ow.openwhisk.svc.clusterset.local:8080/api/")
-	namespace := strings.Split(actionStatus.Namespace, "/")[0] // "namespace/package"
-	namespace = strings.Replace(url.QueryEscape(namespace), "+", "%20", -1)
-	pckg := strings.Split(actionStatus.Namespace, "/")[1] // "namespace/package"
-	pckg = strings.Replace(url.QueryEscape(pckg), "+", "%20", -1)
-	action := strings.Replace(url.QueryEscape(actionStatus.Name), "+", "%20", -1)
-	//result = PHYSICS_APIGATEWAY_BASEURL + apiID + "/" + pckg + "/" + name
-	result = strings.ReplaceAll(PHYSICS_BACKENDURL_PATTERN, "@REMOTE-CLUSTER", cluster)
-	result = strings.ReplaceAll(result, "@API-ID", apiID)
-	result = strings.ReplaceAll(result, "@NAMESPACE", namespace) // Same as apiID?
-	result = strings.ReplaceAll(result, "@PACKAGE", pckg)
-	result = strings.ReplaceAll(result, "@ACTION", action)
-
-	logow.Debug(pathLOG + "[setBackendURL] result=[" + result + "]")
-	return result
 }

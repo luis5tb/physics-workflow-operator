@@ -466,8 +466,8 @@ func CleanUpExternalResources(logger logr.Logger, namespace string, workflowMani
 /**
  *
  */
-func UpdateExternalResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
-	log.Info(pathLOG + "[UpdateExternalResources] Updating External Resources ...")
+func ReconcileOpenWhiskResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
+	log.Info(pathLOG + "[ReconcileOpenWhiskResources] Updating External Resources ...")
 
 	var PHYSICS_ACTION_PROXY_IMAGE string = lookupEnv("PHYSICS_ACTION_PROXY_IMAGE", "action-proxy:v1")
 	fm := &FaaSManager{
@@ -492,13 +492,13 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 			}
 		}
 
-		log.Info(pathLOG + "[UpdateExternalResources] Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
+		log.Info(pathLOG + "[ReconcileOpenWhiskResources] Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, action.Name)
-		log.Info(pathLOG + "[UpdateExternalResources] Read Function: status: " + status)
+		log.Info(pathLOG + "[ReconcileOpenWhiskResources] Read Function: status: " + status)
 
 		if statusCode == 404 { // Not found => New
 			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, &action)
-			log.Info(pathLOG+"[UpdateExternalResources] Create Function: ", "statusCode", statusCode, "status", status)
+			log.Info(pathLOG+"[ReconcileOpenWhiskResources] Create Function: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
 				UpdateActionStatus(workflowManifest, &action, status)
 				return goerrors.New("Create function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
@@ -506,7 +506,7 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 		} else {
 			if statusCode == 200 { // Found => Update
 				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, &action, false)
-				log.Info(pathLOG+"[UpdateExternalResources] Update Function: ", "statusCode", statusCode, "status", status)
+				log.Info(pathLOG+"[ReconcileOpenWhiskResources] Update Function: ", "statusCode", statusCode, "status", status)
 				if statusCode != 200 {
 					UpdateActionStatus(workflowManifest, &action, status)
 					return goerrors.New("Update function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
@@ -539,9 +539,9 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 		}{workflowManifest.Name, make(wp5v1alpha1.Annotations), actionList}
 		sequence.Annotations["id"] = workflowManifest.Annotations["id"]
 
-		log.Info(pathLOG + "[UpdateExternalResources] Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
+		log.Info(pathLOG + "[ReconcileOpenWhiskResources] Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-		log.Info(pathLOG+"[UpdateExternalResources] Read Sequence: ", "statusCode", statusCode, "status", status)
+		log.Info(pathLOG+"[ReconcileOpenWhiskResources] Read Sequence: ", "statusCode", statusCode, "status", status)
 		var sequenceAction wp5v1alpha1.Action
 		if statusCode == 404 { // Not found => New
 			sequenceAction.Name = sequence.Name
@@ -551,7 +551,7 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 			sequenceAction.Version = workflowManifest.Annotations["version"]
 			sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
 			statusCode, status = fm.CreateFunction(namespace+"/"+pkgInfo.Name, &sequenceAction)
-			log.Info(pathLOG+"[UpdateExternalResources] Create Sequence: ", "statusCode", statusCode, "status", status)
+			log.Info(pathLOG+"[ReconcileOpenWhiskResources] Create Sequence: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
 				UpdateActionStatus(workflowManifest, &sequenceAction, status)
 				return goerrors.New("Create Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
@@ -565,7 +565,7 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 				sequenceAction.Version = workflowManifest.Annotations["version"]
 				sequenceAction.Code = normalizeSeqActionsFQN(sequence.Actions, namespace, pkgInfo.Name)
 				statusCode, status = fm.UpdateFunction(namespace+"/"+pkgInfo.Name, &sequenceAction, false)
-				log.Info(pathLOG+"[UpdateExternalResources] Update Sequence: ", "statusCode", statusCode, "status", status)
+				log.Info(pathLOG+"[ReconcileOpenWhiskResources] Update Sequence: ", "statusCode", statusCode, "status", status)
 				if statusCode != 200 {
 					UpdateActionStatus(workflowManifest, &sequenceAction, status)
 					return goerrors.New("Update Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
@@ -579,9 +579,9 @@ func UpdateExternalResources(logger logr.Logger, namespace string, workflowManif
 		UpdateActionStatus(workflowManifest, &sequenceAction, "")
 	}
 
-	log.Info(pathLOG + "[UpdateExternalResources] UpdateExternalResources() end.")
+	log.Info(pathLOG + "[ReconcileOpenWhiskResources] ReconcileOpenWhiskResources() end.")
 	return nil
-} // UpdateExternalResources()
+} // ReconcileOpenWhiskResources()
 
 /**
  *
