@@ -1,0 +1,31 @@
+apiVersion: wp5.physics-faas.eu/v1alpha1
+kind: Workflow
+metadata:
+  name: knative-test
+  namespace: default
+  annotations:
+    memory: "512"
+spec:
+  platform: knative
+  listOfActions:
+    - id: a714de618203e22e
+  actions:
+    - name: knative-function
+      id: a714de618203e22e
+      image: localhost:50000/kn-user/test-hw@sha256:517710583d5a818a15c97da90d7d1f390864975b6c212c2849b7f77a7ecd8a07
+      runtime: python
+      performanceProfile:
+        memory: "io-intensive"
+      annotations:
+        clustertype: "optimal"
+        active: ""
+        complete: ""
+        memory: "512"
+        timeout: "300000"
+      defaultParams:
+        - name: "maxscale"
+          value: "2"
+        - name: "minscale"
+          value: "1"
+        - name: "concurrency"
+          value: "1"
