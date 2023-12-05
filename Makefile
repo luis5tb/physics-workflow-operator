@@ -168,10 +168,21 @@ undeploykind: ## Undeploy controller from the K8s cluster specified in ~/.kube/c
 	$(KUSTOMIZE) build config/localdev | kubectl delete --context=kind-$(KIND_CLUSTER) --ignore-not-found=$(ignore-not-found) -f -
 
 
-CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
+##@ Build Dependencies
+## Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+## Tool Binaries
+CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+## Tool Versions
+CONTROLLER_TOOLS_VERSION ?= v0.11.1
+
 .PHONY: controller-gen
-controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
+controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.
+$(CONTROLLER_GEN): $(LOCALBIN)
+	test -s $(LOCALBIN)/controller-gen && $(LOCALBIN)/controller-gen --version | grep -q $(CONTROLLER_TOOLS_VERSION) || \
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 .PHONY: kustomize
@@ -252,3 +263,4 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
