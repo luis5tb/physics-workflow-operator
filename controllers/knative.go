@@ -40,6 +40,38 @@ func UpdateKnativeWorkflowStatus(r *WorkflowReconciler, ctx context.Context, wor
 	return nil
 }
 
+func CleanUpKnativeResources(r *WorkflowReconciler, ctx context.Context, workflowManifest *wp5v1alpha1.Workflow) error {
+	// Get the service
+	gvk := schema.GroupVersionKind{
+		Group:   "serving.knative.dev",
+		Version: "v1",
+		Kind:    "Service",
+	}
+
+	// Check if the object already exists
+	existingObj := &unstructured.Unstructured{}
+	existingObj.SetGroupVersionKind(gvk)
+	existingObj.SetName(workflowManifest.Spec.Actions[0].Name)
+	existingObj.SetNamespace(workflowManifest.ObjectMeta.Namespace)
+
+	err := r.Client.Get(ctx, client.ObjectKeyFromObject(existingObj), existingObj)
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			// Nothing to do, already deleted
+			return nil
+		} else {
+			// error getting the service - requeue the request.
+			return err
+		}
+	} else {
+		if err := r.Client.Delete(ctx, existingObj); err != nil {
+			err = fmt.Errorf("Failed to delete the Knative Service: %v", err)
+			return err
+		}
+	}
+	return nil
+}
+
 func ReconcileKnativeResources(r *WorkflowReconciler, ctx context.Context, logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) (string, error) {
 	gvk := schema.GroupVersionKind{
 		Group:   "serving.knative.dev",

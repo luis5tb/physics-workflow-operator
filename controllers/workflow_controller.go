@@ -186,11 +186,24 @@ func (r *WorkflowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *WorkflowReconciler) finalizeWorkflowManifest(ctx context.Context, req ctrl.Request, workflowManifest *wp5v1alpha1.Workflow) error {
 	var logger = log.FromContext(ctx)
 	logow.Info(pathLOG + "[finalizeWorkflowManifest] finalizeWorkflowManifest()...")
-	err := CleanUpExternalResources(logger, req.Namespace, workflowManifest)
-	if err != nil {
-		//panic(err)
-		return err
+
+	switch workflowManifest.Spec.Platform {
+	case KNATIVE_PLATFORM:
+		err := CleanUpKnativeResources(logger, req.Namespace, workflowManifest)
+		if err != nil {
+			//panic(err)
+			return err
+		}
+	case OPENWHISK_PLATFORM:
+		err := CleanUpOpenWhiskResources(logger, req.Namespace, workflowManifest)
+		if err != nil {
+			//panic(err)
+			return err
+		}
+	default:
+		logow.Error(pathLOG + "[Reconcile] Unknown platform")
 	}
+
 	logow.Info(pathLOG + "[finalizeWorkflowManifest] Successfully finalized workflowManifest")
 	return nil
 }

@@ -418,8 +418,8 @@ func normalizeNamespace(namespace string) string {
 /**
  *
  */
-func CleanUpExternalResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
-	log.Info(pathLOG + "[CleanUpExternalResources] cleanUp()...")
+func CleanUpOpenWhiskResources(logger logr.Logger, namespace string, workflowManifest *wp5v1alpha1.Workflow) error {
+	log.Info(pathLOG + "[CleanUpOpenWhiskResources] cleanUp()...")
 
 	fm := &FaaSManager{
 		Name: "openwhisk",
@@ -427,14 +427,14 @@ func CleanUpExternalResources(logger logr.Logger, namespace string, workflowMani
 	pkgInfo := struct{ Name string }{workflowManifest.Name}
 
 	for _, action := range workflowManifest.Spec.Actions {
-		log.Info(pathLOG + "[CleanUpExternalResources] Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
+		log.Info(pathLOG + "[CleanUpOpenWhiskResources] Function: " + namespace + "/" + pkgInfo.Name + "/" + action.Name)
 
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, action.Name)
-		log.Info(pathLOG+"[CleanUpExternalResources] Read Function: ", "statusCode", statusCode, "status", status)
+		log.Info(pathLOG+"[CleanUpOpenWhiskResources] Read Function: ", "statusCode", statusCode, "status", status)
 
 		if statusCode == 200 {
 			statusCode, status = fm.DeleteFunction(namespace+"/"+pkgInfo.Name, action.Name)
-			log.Info(pathLOG+"[CleanUpExternalResources] Delete Function: ", "statusCode", statusCode, "status", status)
+			log.Info(pathLOG+"[CleanUpOpenWhiskResources] Delete Function: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
 				return goerrors.New("Delete function " + namespace + "/" + pkgInfo.Name + "/" + action.Name + " failed! " + status)
 			}
@@ -447,21 +447,21 @@ func CleanUpExternalResources(logger logr.Logger, namespace string, workflowMani
 			Actions     string
 		}{workflowManifest.Name, nil, ""}
 
-		log.Info(pathLOG + "[CleanUpExternalResources] Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
+		log.Info(pathLOG + "[CleanUpOpenWhiskResources] Sequence: " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name)
 		statusCode, status := fm.ReadFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-		log.Info(pathLOG+"[CleanUpExternalResources] Read Sequence: ", "statusCode", statusCode, "status", status)
+		log.Info(pathLOG+"[CleanUpOpenWhiskResources] Read Sequence: ", "statusCode", statusCode, "status", status)
 		if statusCode == 200 {
 			statusCode, status = fm.DeleteFunction(namespace+"/"+pkgInfo.Name, sequence.Name)
-			log.Info(pathLOG+"[CleanUpExternalResources] Delete Sequence: ", "statusCode", statusCode, "status", status)
+			log.Info(pathLOG+"[CleanUpOpenWhiskResources] Delete Sequence: ", "statusCode", statusCode, "status", status)
 			if statusCode != 200 {
 				return goerrors.New("Delete Sequence " + namespace + "/" + pkgInfo.Name + "/" + sequence.Name + " failed! " + status)
 			}
 		}
 	}
 
-	log.Info(pathLOG + "[CleanUpExternalResources] cleanUp() end.")
+	log.Info(pathLOG + "[CleanUpOpenWhiskResources] cleanUp() end.")
 	return nil
-} // CleanUpExternalResources()
+} // CleanUpOpenWhiskResources()
 
 /**
  *
