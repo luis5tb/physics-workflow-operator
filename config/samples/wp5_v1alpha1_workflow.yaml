@@ -1,64 +1,31 @@
 apiVersion: wp5.physics-faas.eu/v1alpha1
 kind: Workflow
 metadata:
-  name: hello-sequence
+  name: knative-test
+  namespace: default
   annotations:
-    id: "flow:19fe4293742e0b2c"
-    version: "1"
+    memory: "512"
 spec:
-  execution: NativeSequence
+  platform: knative
   listOfActions:
-    - id: 339d2ef8b0b29795
-    - id: 3a807141f16764a5
-  native: true
-  platform: openWhisk
-  type: flow:19fe4293742e0b2c
+    - id: a714de618203e22e
   actions:
-  - name: hello
-    description: "hello"
-    id: 339d2ef8b0b29795
-    version: 1.0.0
-    runtime: nodejs
-    code: "function main(msg) {\nmsg.payload=msg.payload+' hello';\nreturn msg;}"
-    functionInput:
-      - default: ""
-        description: "payload parameter"
-        type: string
-        value: "hello"
-    resources:
-      limits:
-        memory: 128
-      requests:
-        cpu: 1
-        memory: 128
-    extraResources:
-      gpu: true
-      diskType: ssd
-    performanceProfile:
-      cpu: medium
-      memory: low
-      fsRead: medium
-      fsWrite: high
-      networkTransmitted: low
-      networkReceived: high
-  - name: world
-    description: "world"
-    version: 1.0.0
-    id: 3a807141f16764a5
-    runtime: nodejs
-    code: |
-      function main(msg) {
-      //implies affinity with the other function in the sequence
-      msg.payload=msg.payload+' world';
-      return msg;
-      }
-    functionInput:
-       - default: ""
-         description: "payload parameter"
-         type: string
-         value: "world"
-    resources:
-      limits:
-        memory: 256
-    extraResources:
-      gpu: false
+    - name: knative-function
+      id: a714de618203e22e
+      image: IMAGE
+      runtime: python
+      performanceProfile:
+        memory: "io-intensive"
+      annotations:
+        clustertype: "optimal"
+        active: ""
+        complete: ""
+        memory: "512"
+        timeout: "300000"
+      defaultParams:
+        - name: "maxscale"
+          value: "2"
+        - name: "minscale"
+          value: "1"
+        - name: "concurrency"
+          value: "1"

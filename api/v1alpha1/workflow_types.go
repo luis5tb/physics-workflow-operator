@@ -58,8 +58,9 @@ type Action struct {
 	// Code: function code is passed as string here
 	Code string `json:"code,omitempty"`
 	// Image: function code in a docker image
-	Image         string    `json:"image,omitempty"`
-	FunctionInput []Payload `json:"functionInput,omitempty"`
+	Image         string      `json:"image,omitempty"`
+	FunctionInput Inputs      `json:"functionInput,omitempty"`
+	Annotations   Annotations `json:"annotations,omitempty"`
 	// Same resources as the core k8s for containers: https://github.com/kubernetes/api/blob/master/core/v1/types.go
 	// This includes limits and requests
 	Resources typesv1.ResourceRequirements `json:"resources,omitempty"`
@@ -67,14 +68,26 @@ type Action struct {
 	ExtraResources ExtraResourcesInfo `json:"extraResources,omitempty"`
 	// PerformanceProfile: Information provided by the Performance Profiler module
 	PerformanceProfile PerformanceProfileInfo `json:"performanceProfile,omitempty"`
+	// Default Parameters
+	DefaultParams []DefautlParameters `json:"defaultParams,omitempty"`
 }
 
-type Payload struct {
-	Value       string `json:"value"`
-	Default     string `json:"default"`
-	Type        string `json:"type"`
+type DefautlParameters struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type Inputs map[string]Input
+type Input struct {
+	Name        string `json:"name,omitempty"`
+	Value       string `json:"value,omitempty"`
+	Default     string `json:"default,omitempty"`
+	Type        string `json:"type,omitempty"`
 	Description string `json:"description,omitempty"`
 }
+
+// Annotations per function
+type Annotations map[string]string
 
 type ExtraResourcesInfo struct {
 	Gpu      bool   `json:"gpu,omitempty"`
@@ -94,6 +107,28 @@ type PerformanceProfileInfo struct {
 type WorkflowStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Conditions     []metav1.Condition `json:"conditions,omitempty"`
+	ActionStatuses []ActionStatus     `json:"actionStatus,omitempty"`
+	ActionStatSer  string             `json:"actionStatSer,omitempty"`
+}
+
+type ActionStatus struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"` // namespace + package ?
+	//Package	string `json:"package"`
+	Id         string `json:"id"`
+	Version    string `json:"version"`
+	Runtime    string `json:"runtime"`
+	State      string `json:"state"` // Unknown, Applied, Available, Error
+	Message    string `json:"message"`
+	BackendURL string `json:"backendURL"`
+	Remote     string `json:"remote,omitempty"`
+	// New fields
+	ActionHost        string `json:"actionHost,omitempty"`
+	ActionNamespace   string `json:"actionNamespace,omitempty"`
+	ActionCredentials string `json:"actionCredentials,omitempty"`
+	ActionParam1      string `json:"actionParam1,omitempty"`
+	ActionParam2      string `json:"actionParam2,omitempty"`
 }
 
 //+kubebuilder:object:root=true

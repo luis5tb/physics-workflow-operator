@@ -19,9 +19,11 @@ package controllers
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	wp5v1alpha1 "github.com/luis5tb/physics-workflow-operator/api/v1alpha1"
@@ -32,6 +34,10 @@ type WorkflowReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+const workflowManifestFinalizer = "workflowmanifest/finalizer"
+const KNATIVE_PLATFORM = "knative"
+const OPENWHISK_PLATFORM = "openWhisk"
 
 //+kubebuilder:rbac:groups=wp5.physics-faas.eu,resources=workflows,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=wp5.physics-faas.eu,resources=workflows/status,verbs=get;update;patch
@@ -49,9 +55,88 @@ type WorkflowReconciler struct {
 func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// 1. Get workflowManifest
+	workflowManifest := &wp5v1alpha1.Workflow{}
+	err := r.Get(ctx, req.NamespacedName, workflowManifest)
+	if err != nil {
+		if errors.IsNotFound(err) { // we deleted the CR object
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	// 2. Check if the workflowManifest instance is marked to be deleted, which is indicated by the deletion timestamp being set.
+	isWorkflowManifestMarkedToBeDeleted := workflowManifest.GetDeletionTimestamp() != nil
+	if !isWorkflowManifestMarkedToBeDeleted && controllerutil.ContainsFinalizer(workflowManifest, workflowManifestFinalizer) {
+
+		switch workflowManifest.Spec.Platform {
+		case KNATIVE_PLATFORM:
+			route, err := ReconcileKnativeResources(r, ctx, req.Namespace, workflowManifest)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+			err = UpdateKnativeWorkflowStatus(r, ctx, workflowManifest, route)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		case OPENWHISK_PLATFORM:
+			// TO DO
+		default:
+			// It must be stated, otherwise don't process
+			return ctrl.Result{}, nil
+		}
+	}
+
+	// Check if the workflowManifest instance is marked to be deleted, which is indicated by the deletion timestamp being set.
+	if isWorkflowManifestMarkedToBeDeleted {
+		if controllerutil.ContainsFinalizer(workflowManifest, workflowManifestFinalizer) {
+			// Run finalization logic for workflowManifestFinalizer. If the
+			// finalization logic fails, don't remove the finalizer so
+			// that we can retry during the next reconciliation.
+			if err := r.finalizeWorkflowManifest(ctx, req, workflowManifest); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			// Remove workflowManifest Finalizer. Once all finalizers have been
+			// removed, the object will be deleted.
+			controllerutil.RemoveFinalizer(workflowManifest, workflowManifestFinalizer)
+			err := r.Update(ctx, workflowManifest)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// Add finalizer for this CR
+	if !controllerutil.ContainsFinalizer(workflowManifest, workflowManifestFinalizer) {
+		controllerutil.AddFinalizer(workflowManifest, workflowManifestFinalizer)
+		err := r.Update(ctx, workflowManifest)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *WorkflowReconciler) finalizeWorkflowManifest(ctx context.Context, req ctrl.Request, workflowManifest *wp5v1alpha1.Workflow) error {
+	var logger = log.FromContext(ctx)
+
+	switch workflowManifest.Spec.Platform {
+	case KNATIVE_PLATFORM:
+		err := CleanUpKnativeResources(r, ctx, workflowManifest)
+		if err != nil {
+			//panic(err)
+			return err
+		}
+	case OPENWHISK_PLATFORM:
+		// TO DO
+	default:
+		// No need to process
+		return nil
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
