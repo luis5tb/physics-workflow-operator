@@ -117,7 +117,7 @@ func generateNewService(r *WorkflowReconciler, action wp5v1alpha1.Action) (*unst
 			num, err := strconv.Atoi(elem.Value)
 			// Check for conversion errors
 			if err != nil {
-				fmt.Errorf("Conversion error, setting concurrencty to 1:", err)
+				err = fmt.Errorf("Conversion error for concurrencty: %v", err)
 				return obj, err
 			} else {
 				concurrency = num
@@ -169,7 +169,7 @@ func updateService(r *WorkflowReconciler, action wp5v1alpha1.Action, kn_s *unstr
 			num, err := strconv.Atoi(elem.Value)
 			// Check for conversion errors
 			if err != nil {
-				fmt.Errorf("Conversion error, setting concurrencty to 1:", err)
+				err = fmt.Errorf("Conversion error for concurrencty: %v", err)
 				return kn_s, err
 			} else {
 				concurrency = num
